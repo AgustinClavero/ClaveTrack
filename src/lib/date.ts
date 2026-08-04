@@ -26,6 +26,8 @@ export interface DayCell {
   weekday: string; // "Lun", "Mar"...
   dayNum: number;
   isToday: boolean;
+  monthShort: string; // "Ago", "Sep"...
+  isFuture: boolean;
 }
 
 /** Devuelve los últimos `count` días (terminando hoy) para el calendario. */
@@ -39,9 +41,40 @@ export function recentDays(count: number, timeZone: string = DEFAULT_TZ): DayCel
       weekday: weekdayShort(date),
       dayNum: Number(date.slice(8, 10)),
       isToday: date === today,
+      monthShort: monthShort(date),
+      isFuture: date > today,
     });
   }
   return cells;
+}
+
+/**
+ * Ventana de días alrededor de hoy para el calendario deslizable:
+ * cruza el mes anterior y el siguiente sin cortar en el borde de mes.
+ */
+export function dayWindow(before: number, after: number, timeZone: string = DEFAULT_TZ): DayCell[] {
+  const today = userToday(timeZone);
+  const cells: DayCell[] = [];
+  for (let i = -before; i <= after; i++) {
+    const date = addDays(today, i);
+    cells.push({
+      date,
+      weekday: weekdayShort(date),
+      dayNum: Number(date.slice(8, 10)),
+      isToday: date === today,
+      monthShort: monthShort(date),
+      isFuture: date > today,
+    });
+  }
+  return cells;
+}
+
+function monthShort(dateISO: string): string {
+  const m = new Intl.DateTimeFormat("es-AR", { month: "short", timeZone: "UTC" }).format(
+    new Date(dateISO + "T12:00:00Z")
+  );
+  const clean = m.replace(".", "");
+  return clean.charAt(0).toUpperCase() + clean.slice(1);
 }
 
 function weekdayShort(dateISO: string): string {

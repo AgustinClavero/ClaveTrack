@@ -16,7 +16,7 @@ import {
   xpForScore,
   type DayScore,
 } from "@/lib/calculations/scoring";
-import { recentDays, type DayCell } from "@/lib/date";
+import { dayWindow, recentDays, type DayCell } from "@/lib/date";
 import type { Habit, Meal, MealType, NutritionGoals, WeightPoint } from "@/types";
 
 const MEAL_EMOJI: Record<string, string> = {
@@ -218,7 +218,8 @@ export async function getDashboard(): Promise<Dashboard | null> {
   if (!ctx) return null;
   const supabase = getServerClient();
   const { today: date, timezone } = ctx;
-  const weekCells = recentDays(7, timezone);
+  // Ventana amplia: el calendario se desliza al mes anterior y al siguiente.
+  const weekCells = dayWindow(45, 30, timezone);
 
   const [goalsRes, mealsRes, habitsRes, entriesRes, lastWeightRes, logRes, historyRes] = await Promise.all([
     supabase

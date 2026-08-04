@@ -5,6 +5,7 @@ import { nf } from "@/lib/utils";
 import { Ring } from "@/components/ui/Ring";
 import { CalendarStrip } from "@/components/modules/CalendarStrip";
 import { AreaStrip } from "@/components/modules/AreaStrip";
+import { MacroCard } from "@/components/modules/MacroCard";
 import { AddMealButton } from "@/components/modules/AddMealButton";
 import { FocusEditor } from "@/components/modules/FocusEditor";
 
@@ -91,51 +92,37 @@ export default async function TodayPage() {
           </div>
         </div>
 
-        {/* Áreas */}
-        <AreaStrip breakdown={score.breakdown} />
-
-        {/* Nutrición */}
-        <div className="card dcard">
-          <div className="dc-head">
-            <span className="eyebrow">Nutrición</span>
-            <span className="dc-pct">{nPct >= 0 ? nPct + "%" : "—"}</span>
-          </div>
-          <div className="dc-cal">
+        {/* Nutrición: calorías arriba y los macros en cards propias debajo */}
+        <div className="nutri-block">
+          <div className="card cal-hero">
             <div>
+              <div className="dc-head">
+                <span className="eyebrow">Nutrición</span>
+                <span className="dc-pct">{nPct >= 0 ? nPct + "%" : "—"}</span>
+              </div>
               <div className="cal-num">
                 {nf(totals.kcal)}
-                <small> /{nf(goals.kcal)}</small>
+                <small>/{nf(goals.kcal)}</small>
               </div>
               <div className="cal-lbl">Calorías · faltan {nf(Math.max(0, goals.kcal - totals.kcal))}</div>
+              <div className="dc-foot">
+                <AddMealButton label="Registrar comida" />
+              </div>
             </div>
-            <Ring size={72} stroke={8} value={goals.kcal ? totals.kcal / goals.kcal : 0} color="var(--ink)" centerFontSize={20}>
+            <Ring size={84} stroke={9} value={goals.kcal ? totals.kcal / goals.kcal : 0} color="var(--ink)" centerFontSize={24}>
               🔥
             </Ring>
           </div>
-          <div className="dc-mrow">
-            {[
-              { l: "Proteína", v: totals.protein, g: goals.protein, e: "🍗", c: "var(--red)", t: "var(--red-tint)" },
-              { l: "Carbos", v: totals.carbs, g: goals.carbs, e: "🌾", c: "var(--amber)", t: "var(--amber-tint)" },
-              { l: "Grasa", v: totals.fat, g: goals.fat, e: "🥑", c: "var(--blue)", t: "var(--blue-tint)" },
-            ].map((m) => (
-              <div className="dc-mcell" key={m.l}>
-                <div className="mr">
-                  <Ring size={56} stroke={7} value={m.g ? m.v / m.g : 0} color={m.c} track={m.t} centerFontSize={17}>
-                    {m.e}
-                  </Ring>
-                </div>
-                <div className="mv">
-                  {nf(m.v)}
-                  <small>/{nf(m.g)}</small>
-                </div>
-                <div className="ml2">{m.l}</div>
-              </div>
-            ))}
-          </div>
-          <div className="dc-foot">
-            <AddMealButton label="Registrar comida" />
+
+          <div className="macro-cards">
+            <MacroCard label="Proteína" value={totals.protein} goal={goals.protein} emoji="🍗" color="var(--red)" tint="var(--red-tint)" />
+            <MacroCard label="Carbos" value={totals.carbs} goal={goals.carbs} emoji="🌾" color="var(--amber)" tint="var(--amber-tint)" />
+            <MacroCard label="Grasa" value={totals.fat} goal={goals.fat} emoji="🥑" color="var(--blue)" tint="var(--blue-tint)" />
           </div>
         </div>
+
+        {/* Áreas */}
+        <AreaStrip breakdown={score.breakdown} />
 
         {/* Hábitos clave */}
         <div className="card dcard">

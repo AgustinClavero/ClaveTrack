@@ -3630,3 +3630,215 @@ svg.line {
     min-height: 240px;
   }
 }
+
+/* ============================================================
+   CALENDARIO — recuadro blanco, deslizable entre meses,
+   hoy como disco negro con el progreso en blanco.
+   ============================================================ */
+.cal-card-wrap {
+  padding: var(--sp-3) var(--sp-2);
+  overflow: hidden;
+}
+.cal7 {
+  display: flex;
+  gap: var(--sp-1);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 0 var(--sp-2);
+}
+.cal7::-webkit-scrollbar {
+  display: none;
+}
+.cday {
+  flex: 0 0 auto;
+  width: 54px;
+  scroll-snap-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--sp-2) 0;
+  background: none;
+  border: none;
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease);
+}
+.cday:hover {
+  background: var(--surface-2);
+}
+.cday .cdm {
+  min-height: 13px;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.cday .cdn {
+  font-size: var(--fs-2xs);
+  color: var(--text-2);
+  font-weight: 600;
+}
+.cday .cdr {
+  position: relative;
+  display: block;
+  width: 44px;
+  height: 44px;
+  margin-top: var(--sp-1);
+  border-radius: 50%;
+}
+.cday .cdr .cdnum {
+  font-weight: 700;
+  font-size: var(--fs-sm);
+}
+/* Hoy: un solo circulo, relleno negro, progreso blanco. Sin aro exterior. */
+.cday.today .cdr {
+  background: var(--ink);
+}
+.cday.today .cdr .cdnum {
+  color: var(--ink-contrast);
+}
+.cday.today .cdn,
+.cday.today .cdm {
+  color: var(--text);
+  font-weight: 800;
+}
+.cday.future {
+  opacity: 0.45;
+}
+
+/* ============================================================
+   AREAS DE HOY — a todo el ancho, compactas y sin tanto aire
+   ============================================================ */
+.astrip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-2);
+  overflow: visible;
+  padding: 0;
+}
+.acard {
+  width: auto;
+  flex: initial;
+  padding: var(--sp-3) var(--sp-2);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-sm);
+}
+.acard .ar {
+  width: 48px;
+  height: 48px;
+}
+.acard .an {
+  margin-top: var(--sp-2);
+  font-size: 10.5px;
+}
+
+@media (min-width: 560px) {
+  .astrip {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+/* ============================================================
+   DASHBOARD — alturas niveladas y Nutricion en la fila del heroe
+   ============================================================ */
+@media (min-width: 1024px) {
+  .dash-grid {
+    align-items: stretch;
+  }
+  .cal-card-wrap {
+    grid-column: 1 / -1;
+  }
+  .d-hero {
+    grid-column: span 5;
+  }
+  .lvl-card {
+    grid-column: span 3;
+  }
+  .dcard-nutri {
+    grid-column: span 4;
+  }
+  .astrip-wrap {
+    grid-column: 1 / -1;
+  }
+  /* Las dos cards restantes se reparten el ancho. */
+  .dcard:not(.dcard-nutri) {
+    grid-column: span 6;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .cal-card-wrap,
+  .astrip-wrap {
+    grid-column: 1 / -1;
+  }
+}
+
+/* La card de constancia se estira para nivelar: centrar su contenido. */
+@media (min-width: 1024px) {
+  .lvl-card {
+    justify-content: center;
+  }
+  .d-hero {
+    align-items: center;
+  }
+}
+
+/* ============================================================
+   AJUSTES FINOS — 7 dias a la vista y bloque de nutricion
+   ============================================================ */
+
+/* Exactamente 7 celdas visibles; el resto se desliza. */
+.cal7 {
+  gap: var(--sp-1);
+}
+.cday {
+  width: auto;
+  flex: 0 0 calc((100% - var(--sp-1) * 6) / 7);
+  min-width: 46px;
+}
+
+/* Calorias arriba + 3 macro cards debajo, como una sola columna. */
+.nutri-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+.nutri-block .cal-hero {
+  flex: 1;
+  align-items: flex-start;
+}
+.nutri-block .cal-hero .dc-head {
+  margin-bottom: var(--sp-2);
+}
+.nutri-block .cal-num {
+  font-size: var(--fs-3xl);
+}
+.nutri-block .macro-cards {
+  gap: var(--sp-3);
+}
+.nutri-block .macro-card {
+  padding: var(--sp-3) var(--sp-2);
+  gap: var(--sp-2);
+}
+
+@media (min-width: 768px) {
+  .nutri-block {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 1024px) {
+  .nutri-block {
+    grid-column: span 4;
+  }
+  /* Hero, constancia y nutricion arrancan y terminan juntas. */
+  .d-hero,
+  .lvl-card,
+  .nutri-block {
+    align-self: stretch;
+  }
+}
