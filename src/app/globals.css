@@ -5694,3 +5694,11 @@ svg.line {
     grid-template-columns: 1.15fr 0.925fr 0.925fr;
   }
 }
+
+/* El anillo de macro quedaba al ras del borde inferior de su card. */
+.macro-card,
+.deck-page .macro-card,
+.nutri-block .macro-card {
+  padding: var(--sp-4) var(--sp-3) var(--sp-5);
+  gap: var(--sp-3);
+}
