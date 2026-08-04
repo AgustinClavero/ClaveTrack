@@ -5511,3 +5511,33 @@ svg.line {
 .qty-sheet h3:empty {
   display: none;
 }
+
+/* El sheet de comida necesita más ancho: los 6 tipos entran en una fila. */
+@media (min-width: 1024px) {
+  .sheet.meal-sheet {
+    width: min(680px, 94vw);
+  }
+}
+
+/* Ítem agregado: la cantidad se muestra en su unidad y se puede editar. */
+.ms-item .ms-in {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  padding: var(--sp-1) 0;
+  border: none;
+  background: none;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.ms-item .ms-in:hover .n {
+  text-decoration: underline;
+}
+.ms-macros-mini {
+  font-size: var(--fs-2xs);
+  color: var(--muted);
+  font-weight: 600;
+}

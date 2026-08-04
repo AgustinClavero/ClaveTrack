@@ -31,6 +31,8 @@ interface Draft {
   food: FoodHit;
   /** Siempre en gramos o ml: la unidad es solo una forma de contar. */
   grams: number;
+  /** Cantidad tal como la eligió el usuario (3 huevos, 1 lata…). */
+  units: number | null;
 }
 
 /** Macros de una cantidad en gramos (el catálogo está por 100 g). */
@@ -64,6 +66,7 @@ export function MealSheet({ proteinToday = 0, proteinGoal = 0 }: { proteinToday?
   const [photo, setPhoto] = useState<{ path: string; preview: string } | null>(null);
   const [uploading, setUploading] = useState(false);
   const [pendingFood, setPendingFood] = useState<FoodHit | null>(null);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -74,6 +77,7 @@ export function MealSheet({ proteinToday = 0, proteinGoal = 0 }: { proteinToday?
     setError(null);
     setPhoto(null);
     setPendingFood(null);
+    setEditingIndex(null);
     getFoodPickerData().then((r) => r.ok && setPicker(r.data));
   }, [open]);
 
@@ -102,9 +106,16 @@ export function MealSheet({ proteinToday = 0, proteinGoal = 0 }: { proteinToday?
     setPhoto({ path: res.path, preview: URL.createObjectURL(file) });
   }
 
-  function addDraft(food: FoodHit, grams: number) {
-    setItems((it) => [...it, { food, grams }]);
+  function addDraft(food: FoodHit, grams: number, units: number | null) {
+    setItems((it) => {
+      const at = it.findIndex((d) => d.food.id === food.id);
+      // Editar el mismo alimento reemplaza su cantidad, no lo duplica.
+      if (editingIndex != null) return it.map((d, i) => (i === editingIndex ? { food, grams, units } : d));
+      if (at >= 0) return it.map((d, i) => (i === at ? { food, grams, units } : d));
+      return [...it, { food, grams, units }];
+    });
     setPendingFood(null);
+    setEditingIndex(null);
     setQuery("");
   }
 
@@ -173,12 +184,18 @@ export function MealSheet({ proteinToday = 0, proteinGoal = 0 }: { proteinToday?
 
   // Paso 2: cantidad del alimento elegido.
   if (pendingFood) {
+    const current = editingIndex != null ? items[editingIndex] : null;
     return (
       <Sheet open={open} onClose={closeSheet} title="" className="meal-sheet qty-sheet">
         <QuantityStep
           food={pendingFood}
-          onBack={() => setPendingFood(null)}
-          onConfirm={(grams) => addDraft(pendingFood, grams)}
+          initialUnits={current?.units ?? null}
+          initialGrams={current?.grams ?? null}
+          onBack={() => {
+            setPendingFood(null);
+            setEditingIndex(null);
+          }}
+          onConfirm={(grams, units) => addDraft(pendingFood, grams, units)}
         />
       </Sheet>
     );
@@ -223,14 +240,26 @@ export function MealSheet({ proteinToday = 0, proteinGoal = 0 }: { proteinToday?
         <div className="ms-items">
           {items.map((d, i) => {
             const m = macrosOf(d.food, d.grams);
+            const qty =
+              d.units != null && d.food.unitLabel
+                ? `${nf(d.units, d.units % 1 === 0 ? 0 : 1)} ${d.food.unitLabel}${d.units !== 1 ? "s" : ""} · ${nf(d.grams)} ${unitOf(d.food)}`
+                : `${nf(d.grams)} ${unitOf(d.food)}`;
             return (
               <div className="ms-item" key={`${d.food.id}-${i}`}>
-                <div className="ms-in">
-                  <div className="n">{d.food.name}</div>
-                  <div className="s">
-                    {nf(d.grams)} {unitOf(d.food)} · {nf(m.kcal)} kcal · {nf(m.protein, 1)} g P
-                  </div>
-                </div>
+                <button
+                  className="ms-in"
+                  onClick={() => {
+                    setEditingIndex(i);
+                    setPendingFood(d.food);
+                  }}
+                  aria-label={`Cambiar cantidad de ${d.food.name}`}
+                >
+                  <span className="n">{d.food.name}</span>
+                  <span className="s">{qty}</span>
+                  <span className="ms-macros-mini">
+                    {nf(m.kcal)} kcal · P {nf(m.protein, 1)} · C {nf(m.carbs, 1)} · G {nf(m.fat, 1)}
+                  </span>
+                </button>
                 <button className="ms-del" onClick={() => setItems((it) => it.filter((_, j) => j !== i))} aria-label={`Quitar ${d.food.name}`}>
                   <Trash2 size={16} />
                 </button>
@@ -402,17 +431,21 @@ function FoodRow({
 /** Paso de cantidad: se elige en la unidad natural del alimento. */
 function QuantityStep({
   food,
+  initialUnits,
+  initialGrams,
   onBack,
   onConfirm,
 }: {
   food: FoodHit;
+  initialUnits: number | null;
+  initialGrams: number | null;
   onBack: () => void;
-  onConfirm: (grams: number) => void;
+  onConfirm: (grams: number, units: number | null) => void;
 }) {
   const hasUnit = !!food.unitLabel && !!food.unitGrams;
-  const [mode, setMode] = useState<"unit" | "gram">(hasUnit ? "unit" : "gram");
-  const [units, setUnits] = useState(1);
-  const [grams, setGrams] = useState(100);
+  const [mode, setMode] = useState<"unit" | "gram">(hasUnit && initialGrams == null ? "unit" : initialUnits != null ? "unit" : hasUnit ? "unit" : "gram");
+  const [units, setUnits] = useState(initialUnits ?? 1);
+  const [grams, setGrams] = useState(initialGrams ?? 100);
 
   const total = mode === "unit" && hasUnit ? units * (food.unitGrams ?? 0) : grams;
   const m = macrosOf(food, total);
@@ -505,8 +538,8 @@ function QuantityStep({
         </div>
       </div>
 
-      <button className="ci-save" onClick={() => onConfirm(total)}>
-        Agregar
+      <button className="ci-save" onClick={() => onConfirm(total, mode === "unit" && hasUnit ? units : null)}>
+        {initialGrams != null ? "Actualizar" : "Agregar"}
       </button>
     </div>
   );
