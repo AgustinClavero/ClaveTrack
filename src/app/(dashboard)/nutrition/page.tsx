@@ -66,9 +66,6 @@ export default async function NutritionPage() {
           <div className="cat-habits">
             <div className="sec-head">
               <span className="eyebrow">Hábitos de alimentación</span>
-              <Link href="/settings" className="dc-link">
-                Gestionar
-              </Link>
             </div>
             <div className="habit-grid">
               {otherHabits.map((h) => (
