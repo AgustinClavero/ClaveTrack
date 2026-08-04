@@ -1,13 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import type { Habit } from "@/types";
+import { toggleHabit } from "@/app/actions";
 
-export function HabitList({ initial }: { initial: Habit[] }) {
+export function HabitList({ initial, date }: { initial: Habit[]; date: string }) {
   const [habits, setHabits] = useState(initial);
+  const [, startTransition] = useTransition();
 
   function toggle(id: string) {
-    setHabits((hs) => hs.map((h) => (h.id === id ? { ...h, done: !h.done } : h)));
+    const target = habits.find((h) => h.id === id);
+    if (!target) return;
+    const done = !target.done;
+    setHabits((hs) => hs.map((h) => (h.id === id ? { ...h, done } : h)));
+    startTransition(async () => {
+      await toggleHabit(id, date, done);
+    });
+  }
+
+  if (habits.length === 0) {
+    return (
+      <div className="card" style={{ textAlign: "center", color: "var(--muted)" }}>
+        Todavía no tenés hábitos. Agregalos desde el onboarding o Configuración.
+      </div>
+    );
   }
 
   return (

@@ -1,7 +1,9 @@
 import { ThemeToggle } from "./ThemeToggle";
-import { STREAK_DAYS } from "@/lib/data/mock";
+import { LogoutButton } from "./LogoutButton";
+import { getStreak } from "@/lib/data/queries";
 
-export function MobileHeader() {
+export async function MobileHeader() {
+  const streak = await getStreak();
   return (
     <div className="head">
       <div className="hb">
@@ -9,8 +11,9 @@ export function MobileHeader() {
         <b>ClaveTrack</b>
       </div>
       <div className="head-right">
-        <span className="streak-pill">🔥 {STREAK_DAYS}</span>
+        <span className="streak-pill">🔥 {streak}</span>
         <ThemeToggle />
+        <LogoutButton />
       </div>
     </div>
   );

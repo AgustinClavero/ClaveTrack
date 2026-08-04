@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Plus } from "lucide-react";
 import { NAV_MAIN, NAV_SOON } from "./nav-items";
 import { useUIStore } from "@/lib/store";
+import { LogoutButton } from "./LogoutButton";
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -40,6 +41,9 @@ export function Sidebar() {
           <Plus size={18} strokeWidth={2.5} />
           Registrar
         </button>
+      </div>
+      <div style={{ marginTop: "auto" }}>
+        <LogoutButton variant="side" />
       </div>
     </aside>
   );

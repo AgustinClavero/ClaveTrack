@@ -1,22 +1,25 @@
-import { getToday } from "@/lib/data/mock";
+import { redirect } from "next/navigation";
+import { getDashboard } from "@/lib/data/queries";
 import { nf } from "@/lib/utils";
 import { WeightChart } from "@/components/modules/WeightChart";
+import { RegisterWeight } from "@/components/modules/RegisterWeight";
+
+export const dynamic = "force-dynamic";
 
 export default async function ProgressPage() {
-  const { weight, measures, weightTarget, streak } = await getToday();
-  const current = weight[weight.length - 1].kg;
-  const start = weight[0].kg;
-  const pct = Math.min(100, Math.round(((start - current) / (start - weightTarget)) * 100));
+  const d = await getDashboard();
+  if (!d) redirect("/login");
+  if (!d.onboarded) redirect("/onboarding");
 
-  const week = [
-    { d: "D", on: true },
-    { d: "L", on: true },
-    { d: "M", on: false },
-    { d: "X", on: false },
-    { d: "J", on: false },
-    { d: "V", on: false },
-    { d: "S", on: false },
-  ];
+  const { weight, weightTarget, streak, date } = d;
+  const current = weight.length ? weight[weight.length - 1].kg : 0;
+  const start = weight.length ? weight[0].kg : 0;
+  const pct =
+    weight.length && start !== weightTarget
+      ? Math.max(0, Math.min(100, Math.round(((start - current) / (start - weightTarget)) * 100)))
+      : 0;
+
+  const week = ["D", "L", "M", "X", "J", "V", "S"].map((dn, i) => ({ d: dn, on: i < Math.min(streak, 7) }));
 
   return (
     <section className="screen">
@@ -26,13 +29,13 @@ export default async function ProgressPage() {
           <div className="card wcard">
             <div className="wl">Tu peso</div>
             <div className="wv">
-              {nf(current, 1)} <small style={{ fontSize: 16, color: "var(--muted)" }}>kg</small>
+              {current ? nf(current, 1) : "—"} <small style={{ fontSize: 16, color: "var(--muted)" }}>kg</small>
             </div>
             <div className="wbar">
               <i style={{ width: `${pct}%` }} />
             </div>
             <div className="wmeta">Meta {nf(weightTarget, 1)} kg</div>
-            <button className="btn-dark-sm">Registrar peso →</button>
+            <RegisterWeight date={date} current={current} />
           </div>
           <div className="card streakcard">
             <div className="big">🔥 {streak}</div>
@@ -48,33 +51,13 @@ export default async function ProgressPage() {
           </div>
         </div>
 
-        <WeightChart series={weight} targetKg={weightTarget} />
-
-        <div className="card">
-          <div className="sec-label" style={{ margin: "0 0 12px" }}>
-            Medidas corporales
+        {weight.length >= 2 ? (
+          <WeightChart series={weight} targetKg={weightTarget} />
+        ) : (
+          <div className="card" style={{ textAlign: "center", color: "var(--muted)" }}>
+            Registrá tu peso unos días y acá vas a ver tu evolución con tendencia y meta.
           </div>
-          {measures.map((m) => (
-            <div
-              key={m.label}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                padding: "10px 0",
-                borderBottom: "1px solid var(--line)",
-                fontSize: 14,
-              }}
-            >
-              <span>{m.label}</span>
-              <span style={{ fontWeight: 700 }}>
-                {nf(m.cm)} cm{" "}
-                <span style={{ color: "var(--muted)", fontWeight: 600 }}>
-                  {m.deltaCm === 0 ? "estable" : `${m.deltaCm > 0 ? "▲" : "▼"} ${nf(Math.abs(m.deltaCm), 1)}`}
-                </span>
-              </span>
-            </div>
-          ))}
-        </div>
+        )}
       </div>
     </section>
   );

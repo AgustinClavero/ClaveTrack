@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Minus, Plus, X } from "lucide-react";
 import { nf } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
+import type { HabitKind } from "@/types";
 
 function Stepper({
   label,
@@ -49,22 +51,23 @@ interface HabitDef {
   id: string;
   name: string;
   emoji: string;
+  kind: HabitKind;
   target?: { unit: string; step: number; decimals?: number; suggested: number | "water" };
   supps?: boolean;
 }
 
 const HABITS: HabitDef[] = [
-  { id: "agua", name: "Beber agua", emoji: "💧", target: { unit: "L", step: 0.1, decimals: 1, suggested: "water" } },
-  { id: "comidas", name: "Registrar comidas", emoji: "🍽" },
-  { id: "planificar", name: "Planificar el día", emoji: "🗓" },
-  { id: "suplementos", name: "Suplementos", emoji: "💊", supps: true },
-  { id: "caminar", name: "Caminar", emoji: "🚶", target: { unit: "pasos", step: 500, suggested: 8000 } },
-  { id: "entrenar", name: "Entrenar", emoji: "🏋️", target: { unit: "x/sem", step: 1, suggested: 4 } },
-  { id: "dormir", name: "Dormir", emoji: "😴", target: { unit: "h", step: 0.5, decimals: 1, suggested: 7.5 } },
-  { id: "leer", name: "Leer", emoji: "📚", target: { unit: "min", step: 5, suggested: 20 } },
-  { id: "estirar", name: "Estirar", emoji: "🧘", target: { unit: "min", step: 5, suggested: 10 } },
-  { id: "meditar", name: "Meditar", emoji: "🧠", target: { unit: "min", step: 5, suggested: 10 } },
-  { id: "sinazucar", name: "Sin azúcar", emoji: "🚫" },
+  { id: "agua", name: "Beber agua", emoji: "💧", kind: "numeric", target: { unit: "L", step: 0.1, decimals: 1, suggested: "water" } },
+  { id: "comidas", name: "Registrar comidas", emoji: "🍽", kind: "boolean" },
+  { id: "planificar", name: "Planificar el día", emoji: "🗓", kind: "boolean" },
+  { id: "suplementos", name: "Suplementos", emoji: "💊", kind: "boolean", supps: true },
+  { id: "caminar", name: "Caminar", emoji: "🚶", kind: "numeric", target: { unit: "pasos", step: 500, suggested: 8000 } },
+  { id: "entrenar", name: "Entrenar", emoji: "🏋️", kind: "weekly", target: { unit: "x/sem", step: 1, suggested: 4 } },
+  { id: "dormir", name: "Dormir", emoji: "😴", kind: "numeric", target: { unit: "h", step: 0.5, decimals: 1, suggested: 7.5 } },
+  { id: "leer", name: "Leer", emoji: "📚", kind: "duration", target: { unit: "min", step: 5, suggested: 20 } },
+  { id: "estirar", name: "Estirar", emoji: "🧘", kind: "duration", target: { unit: "min", step: 5, suggested: 10 } },
+  { id: "meditar", name: "Meditar", emoji: "🧠", kind: "duration", target: { unit: "min", step: 5, suggested: 10 } },
+  { id: "sinazucar", name: "Sin azúcar", emoji: "🚫", kind: "boolean" },
 ];
 
 const STEPS = ["Tu peso", "Tus macros", "Tus hábitos", "Objetivos", "Listo"];
@@ -83,6 +86,8 @@ export function OnboardingWizard() {
   const [targets, setTargets] = useState<Record<string, number>>({});
   const [supps, setSupps] = useState<string[]>(["Creatina", "Vitamina D"]);
   const [suppInput, setSuppInput] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const waterSuggested = Math.max(2, Math.round(weight * 0.033 * 10) / 10);
   const suggestedFor = (h: HabitDef) =>
@@ -106,9 +111,56 @@ export function OnboardingWizard() {
     if (v && !supps.includes(v)) setSupps([...supps, v]);
     setSuppInput("");
   }
-  function next() {
-    if (step < STEPS.length - 1) setStep(step + 1);
-    else router.push("/today");
+  async function next() {
+    if (step < STEPS.length - 1) {
+      setStep(step + 1);
+      return;
+    }
+    // Último paso: guardar todo en Supabase.
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        router.push("/login");
+        return;
+      }
+      const today = new Date().toISOString().slice(0, 10);
+      const aguaHabit = HABITS.find((h) => h.id === "agua")!;
+      const waterMl = selected.includes("agua") ? Math.round(valueFor(aguaHabit) * 1000) : 2500;
+
+      await supabase.from("profiles").upsert({ id: user.id, target_weight_kg: target });
+      await supabase.from("user_settings").upsert({ user_id: user.id });
+      await supabase.from("nutrition_goals").insert({
+        user_id: user.id,
+        effective_from: today,
+        kcal,
+        protein_g: protein,
+        carbs_g: carbs,
+        fat_g: fat,
+        water_ml: waterMl,
+      });
+      const habitRows = selectedHabits.map((h) => ({
+        user_id: user.id,
+        name: h.id === "suplementos" && supps.length ? `Suplementos: ${supps.join(", ")}` : h.name,
+        kind: h.kind,
+        target_value: h.target ? valueFor(h) : null,
+        unit: h.target?.unit ?? null,
+      }));
+      if (habitRows.length) await supabase.from("habits").insert(habitRows);
+      await supabase
+        .from("body_entries")
+        .upsert({ user_id: user.id, log_date: today, weight_kg: weight }, { onConflict: "user_id,log_date" });
+
+      router.push("/today");
+      router.refresh();
+    } catch (err: unknown) {
+      setSaveError(err instanceof Error ? err.message : "No se pudo guardar. Probá de nuevo.");
+      setSaving(false);
+    }
   }
 
   return (
@@ -313,14 +365,17 @@ export function OnboardingWizard() {
         )}
       </div>
 
+      {saveError && (
+        <p style={{ color: "var(--red)", fontSize: 13, fontWeight: 600, margin: "10px 2px 0" }}>{saveError}</p>
+      )}
       <div className="wz-foot">
-        {step > 0 && (
+        {step > 0 && !saving && (
           <button className="wz-back" onClick={() => setStep(step - 1)}>
             Atrás
           </button>
         )}
-        <button className="wz-next" onClick={next}>
-          {step === STEPS.length - 1 ? "Empezar" : "Siguiente"}
+        <button className="wz-next" onClick={next} disabled={saving}>
+          {saving ? "Guardando…" : step === STEPS.length - 1 ? "Empezar" : "Siguiente"}
         </button>
       </div>
     </div>
