@@ -5564,3 +5564,37 @@ svg.line {
   margin-top: var(--sp-3);
   margin-bottom: 0;
 }
+
+/* ============================================================
+   FOCO EN CAMPOS CON CONTENEDOR PROPIO
+   El anillo global dibujaba un rectángulo sobre el input, ignorando
+   el radio del contenedor. El foco lo marca el contenedor.
+   ============================================================ */
+.ms-search input:focus-visible,
+.supps-add input:focus-visible,
+.ms-qty input:focus-visible,
+.qty-field:focus-visible,
+.ms-item .ms-in:focus-visible {
+  box-shadow: none;
+}
+.ms-search:focus-within,
+.supps-add input:focus-visible {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 3px var(--surface-2);
+}
+.qty-input:has(.qty-field:focus-visible) {
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+.ms-item .ms-in:focus-visible .n {
+  text-decoration: underline;
+}
+
+/* La foto como banner arriba del sheet de alta. */
+.ms-photo {
+  margin-top: calc(var(--sp-2) * -1);
+  border-radius: var(--r-md);
+  height: 200px;
+}
+.ms-photo-add {
+  margin-top: var(--sp-1);
+}

@@ -231,6 +231,33 @@ export function MealSheet({ proteinToday = 0, proteinGoal = 0 }: { proteinToday?
 
   return (
     <Sheet open={open} onClose={closeSheet} title="Registrar comida" className="meal-sheet">
+      {/* La foto va arriba, como banner: es lo primero que identifica la comida. */}
+      {photo ? (
+        <div className="ms-photo">
+          <Image src={photo.preview} alt="Foto de la comida" fill sizes="100vw" className="md-img" />
+          <button className="md-fab ms-photo-x" onClick={() => setPhoto(null)} aria-label="Quitar foto">
+            <X size={16} />
+          </button>
+        </div>
+      ) : (
+        <button className="ms-photo-add" onClick={() => fileRef.current?.click()} disabled={uploading}>
+          <Camera size={18} />
+          <span>{uploading ? "Subiendo…" : "Agregar foto"}</span>
+        </button>
+      )}
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        hidden
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) onPickPhoto(f);
+          e.target.value = "";
+        }}
+      />
+
       {/* Progreso de proteína mientras se arma la comida */}
       {proteinGoal > 0 && (
         <div className="ms-macrobar">
@@ -396,33 +423,6 @@ export function MealSheet({ proteinToday = 0, proteinGoal = 0 }: { proteinToday?
           )}
         </>
       )}
-
-      {/* Foto */}
-      {photo ? (
-        <div className="ms-photo">
-          <Image src={photo.preview} alt="Foto de la comida" fill sizes="100vw" className="md-img" />
-          <button className="md-fab ms-photo-x" onClick={() => setPhoto(null)} aria-label="Quitar foto">
-            <X size={16} />
-          </button>
-        </div>
-      ) : (
-        <button className="ms-photo-add" onClick={() => fileRef.current?.click()} disabled={uploading}>
-          <Camera size={18} />
-          <span>{uploading ? "Subiendo…" : "Agregar foto"}</span>
-        </button>
-      )}
-      <input
-        ref={fileRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        hidden
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) onPickPhoto(f);
-          e.target.value = "";
-        }}
-      />
 
       {error && <p className="form-error">{error}</p>}
 
