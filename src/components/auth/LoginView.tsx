@@ -4,23 +4,36 @@ import { useState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, Lock } from "lucide-react";
 
+const PX = (id: number) =>
+  `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=800&h=800`;
+
 const TILES = [
-  { cls: "t-food", emoji: "🥗", lbl: "Comidas" },
-  { cls: "t-train", emoji: "🏋️", lbl: "Entrenos" },
-  { cls: "t-habit", emoji: "💧", lbl: "Hábitos" },
-  { cls: "t-progress", emoji: "📈", lbl: "Progreso" },
+  { cls: "t-food", img: PX(3297807), emoji: "🥗", lbl: "Comidas" },
+  { cls: "t-train", img: PX(4162475), emoji: "🏋️", lbl: "Entrenos" },
+  { cls: "t-habit", img: PX(1458671), emoji: "💧", lbl: "Hábitos" },
+  { cls: "t-progress", img: PX(8454909), emoji: "🏃", lbl: "Progreso" },
 ];
 
 export function LoginView() {
   const [open, setOpen] = useState(false);
   const [showPw, setShowPw] = useState(false);
+  const [failed, setFailed] = useState<Record<string, boolean>>({});
 
   return (
     <div className="login">
       <div className="login-hero">
         {TILES.map((t) => (
           <div key={t.lbl} className={`hero-tile ${t.cls}`}>
-            <span className="emoji">{t.emoji}</span>
+            {failed[t.lbl] ? (
+              <span className="emoji">{t.emoji}</span>
+            ) : (
+              <img
+                src={t.img}
+                alt={t.lbl}
+                loading="eager"
+                onError={() => setFailed((f) => ({ ...f, [t.lbl]: true }))}
+              />
+            )}
             <span className="lbl">{t.lbl}</span>
           </div>
         ))}
@@ -65,11 +78,7 @@ export function LoginView() {
                   </button>
                 </div>
               </div>
-              <Link
-                href="/onboarding"
-                className="btn-dark"
-                style={{ textDecoration: "none", marginTop: 4 }}
-              >
+              <Link href="/onboarding" className="btn-dark" style={{ textDecoration: "none", marginTop: 4 }}>
                 Ingresar
               </Link>
             </div>

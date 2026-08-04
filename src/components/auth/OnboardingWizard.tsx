@@ -2,32 +2,42 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Minus, Plus } from "lucide-react";
+import { Minus, Plus, X } from "lucide-react";
 import { nf } from "@/lib/utils";
 
-interface Stepperable {
+function Stepper({
+  label,
+  value,
+  unit,
+  step,
+  min,
+  decimals = 0,
+  compact = false,
+  onChange,
+}: {
   label: string;
   value: number;
   unit: string;
   step: number;
   min: number;
+  decimals?: number;
+  compact?: boolean;
   onChange: (v: number) => void;
-}
-
-function Stepper({ label, value, unit, step, min, onChange }: Stepperable) {
+}) {
+  const round = (n: number) => Math.round(n * 100) / 100;
   return (
-    <div className="stepper">
+    <div className={`stepper${compact ? " compact" : ""}`}>
       <div className="sp-info">
         <div className="sp-lbl">{label}</div>
         <div className="sp-val">
-          {nf(value)} <small>{unit}</small>
+          {nf(value, decimals)} <small>{unit}</small>
         </div>
       </div>
       <div className="sp-ctrls">
-        <button className="sp-btn" onClick={() => onChange(Math.max(min, value - step))} aria-label="Menos">
+        <button className="sp-btn" onClick={() => onChange(Math.max(min, round(value - step)))} aria-label="Menos">
           <Minus size={18} strokeWidth={2.5} />
         </button>
-        <button className="sp-btn" onClick={() => onChange(value + step)} aria-label="Más">
+        <button className="sp-btn" onClick={() => onChange(round(value + step))} aria-label="Más">
           <Plus size={18} strokeWidth={2.5} />
         </button>
       </div>
@@ -35,22 +45,29 @@ function Stepper({ label, value, unit, step, min, onChange }: Stepperable) {
   );
 }
 
-const ALL_HABITS = [
-  { id: "agua", name: "Beber agua", emoji: "💧" },
+interface HabitDef {
+  id: string;
+  name: string;
+  emoji: string;
+  target?: { unit: string; step: number; decimals?: number; suggested: number | "water" };
+  supps?: boolean;
+}
+
+const HABITS: HabitDef[] = [
+  { id: "agua", name: "Beber agua", emoji: "💧", target: { unit: "L", step: 0.1, decimals: 1, suggested: "water" } },
   { id: "comidas", name: "Registrar comidas", emoji: "🍽" },
   { id: "planificar", name: "Planificar el día", emoji: "🗓" },
-  { id: "suplementos", name: "Suplementos", emoji: "💊" },
-  { id: "caminar", name: "Caminar", emoji: "🚶" },
-  { id: "entrenar", name: "Entrenar", emoji: "🏋️" },
-  { id: "dormir", name: "Dormir 7 h", emoji: "😴" },
-  { id: "leer", name: "Leer", emoji: "📚" },
-  { id: "estirar", name: "Estirar", emoji: "🧘" },
-  { id: "meditar", name: "Meditar", emoji: "🧠" },
-  { id: "pasos", name: "8.000 pasos", emoji: "👟" },
+  { id: "suplementos", name: "Suplementos", emoji: "💊", supps: true },
+  { id: "caminar", name: "Caminar", emoji: "🚶", target: { unit: "pasos", step: 500, suggested: 8000 } },
+  { id: "entrenar", name: "Entrenar", emoji: "🏋️", target: { unit: "x/sem", step: 1, suggested: 4 } },
+  { id: "dormir", name: "Dormir", emoji: "😴", target: { unit: "h", step: 0.5, decimals: 1, suggested: 7.5 } },
+  { id: "leer", name: "Leer", emoji: "📚", target: { unit: "min", step: 5, suggested: 20 } },
+  { id: "estirar", name: "Estirar", emoji: "🧘", target: { unit: "min", step: 5, suggested: 10 } },
+  { id: "meditar", name: "Meditar", emoji: "🧠", target: { unit: "min", step: 5, suggested: 10 } },
   { id: "sinazucar", name: "Sin azúcar", emoji: "🚫" },
 ];
 
-const STEPS = ["Tu peso", "Tus macros", "Tus hábitos", "Listo"];
+const STEPS = ["Tu peso", "Tus macros", "Tus hábitos", "Objetivos", "Listo"];
 
 export function OnboardingWizard() {
   const router = useRouter();
@@ -62,22 +79,33 @@ export function OnboardingWizard() {
   const [protein, setProtein] = useState(140);
   const [carbs, setCarbs] = useState(200);
   const [fat, setFat] = useState(65);
-  const [habits, setHabits] = useState<string[]>([
-    "agua",
-    "comidas",
-    "entrenar",
-    "dormir",
-  ]);
+  const [selected, setSelected] = useState<string[]>(["agua", "comidas", "caminar", "entrenar", "dormir"]);
+  const [targets, setTargets] = useState<Record<string, number>>({});
+  const [supps, setSupps] = useState<string[]>(["Creatina", "Vitamina D"]);
+  const [suppInput, setSuppInput] = useState("");
+
+  const waterSuggested = Math.max(2, Math.round(weight * 0.033 * 10) / 10);
+  const suggestedFor = (h: HabitDef) =>
+    h.target ? (h.target.suggested === "water" ? waterSuggested : h.target.suggested) : 0;
+  const valueFor = (h: HabitDef) => targets[h.id] ?? suggestedFor(h);
 
   const pKcal = protein * 4;
   const cKcal = carbs * 4;
   const fKcal = fat * 9;
   const macroKcal = pKcal + cKcal + fKcal || 1;
 
-  function toggleHabit(id: string) {
-    setHabits((h) => (h.includes(id) ? h.filter((x) => x !== id) : [...h, id]));
-  }
+  const selectedHabits = HABITS.filter((h) => selected.includes(h.id));
+  const withTargets = selectedHabits.filter((h) => h.target || h.supps);
+  const booleanOnes = selectedHabits.filter((h) => !h.target && !h.supps);
 
+  function toggle(id: string) {
+    setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+  }
+  function addSupp() {
+    const v = suppInput.trim();
+    if (v && !supps.includes(v)) setSupps([...supps, v]);
+    setSuppInput("");
+  }
   function next() {
     if (step < STEPS.length - 1) setStep(step + 1);
     else router.push("/today");
@@ -94,8 +122,10 @@ export function OnboardingWizard() {
       <div className="wz-step">
         {step === 0 && (
           <>
-            <div className="wz-emoji">⚖️</div>
-            <h2>Tu peso</h2>
+            <div className="wz-head">
+              <span className="wz-emoji">⚖️</span>
+              <h2>Tu peso</h2>
+            </div>
             <p className="sub">¿Dónde estás hoy y a dónde querés llegar?</p>
             <Stepper label="Peso actual" value={weight} unit="kg" step={1} min={30} onChange={setWeight} />
             <Stepper label="Peso objetivo" value={target} unit="kg" step={1} min={30} onChange={setTarget} />
@@ -111,10 +141,11 @@ export function OnboardingWizard() {
 
         {step === 1 && (
           <>
-            <div className="wz-emoji">🎯</div>
-            <h2>Tus macros</h2>
+            <div className="wz-head">
+              <span className="wz-emoji">🎯</span>
+              <h2>Tus macros</h2>
+            </div>
             <p className="sub">Tu objetivo diario. Podés cambiarlo cuando quieras.</p>
-
             <div className="macro-split">
               <i style={{ width: `${(pKcal / macroKcal) * 100}%`, background: "var(--red)" }} />
               <i style={{ width: `${(cKcal / macroKcal) * 100}%`, background: "var(--amber)" }} />
@@ -134,7 +165,6 @@ export function OnboardingWizard() {
                 Grasa {Math.round((fKcal / macroKcal) * 100)}%
               </span>
             </div>
-
             <Stepper label="Calorías" value={kcal} unit="kcal" step={50} min={800} onChange={setKcal} />
             <Stepper label="Proteína" value={protein} unit="g" step={5} min={0} onChange={setProtein} />
             <Stepper label="Carbohidratos" value={carbs} unit="g" step={5} min={0} onChange={setCarbs} />
@@ -144,14 +174,16 @@ export function OnboardingWizard() {
 
         {step === 2 && (
           <>
-            <div className="wz-emoji">✅</div>
-            <h2>Tus hábitos</h2>
-            <p className="sub">Elegí los que quieras seguir. Podés sumar más después.</p>
+            <div className="wz-head">
+              <span className="wz-emoji">✅</span>
+              <h2>Tus hábitos</h2>
+            </div>
+            <p className="sub">Elegí los que quieras seguir. En el próximo paso ponés el objetivo de cada uno.</p>
             <div className="chip-grid">
-              {ALL_HABITS.map((h) => {
-                const on = habits.includes(h.id);
+              {HABITS.map((h) => {
+                const on = selected.includes(h.id);
                 return (
-                  <button key={h.id} className={`chip${on ? " on" : ""}`} onClick={() => toggleHabit(h.id)}>
+                  <button key={h.id} className={`chip${on ? " on" : ""}`} onClick={() => toggle(h.id)}>
                     <span className="cemoji">{h.emoji}</span>
                     {h.name}
                     <span className="cx">{on ? "✓" : ""}</span>
@@ -164,8 +196,78 @@ export function OnboardingWizard() {
 
         {step === 3 && (
           <>
-            <div className="wz-emoji">🎉</div>
-            <h2>¡Todo listo!</h2>
+            <div className="wz-head">
+              <span className="wz-emoji">🎚️</span>
+              <h2>Tus objetivos</h2>
+            </div>
+            <p className="sub">Ajustá la meta diaria de cada hábito. Dejamos un valor sugerido; después lo editás en su pantalla.</p>
+
+            {withTargets.map((h) =>
+              h.supps ? (
+                <div key={h.id} className="per-group">
+                  <div className="per-title">
+                    <span className="pe">{h.emoji}</span> Suplementos diarios
+                  </div>
+                  <p className="per-hint">Cargá los que tomás. Después los marcás cada día en su pantalla.</p>
+                  <div className="supps-add">
+                    <input
+                      value={suppInput}
+                      onChange={(e) => setSuppInput(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && addSupp()}
+                      placeholder="Ej. Creatina, Omega 3…"
+                    />
+                    <button className="add" onClick={addSupp}>
+                      Agregar
+                    </button>
+                  </div>
+                  <div className="supp-tags">
+                    {supps.map((s) => (
+                      <span key={s} className="supp-tag">
+                        {s}
+                        <button onClick={() => setSupps(supps.filter((x) => x !== s))} aria-label={`Quitar ${s}`}>
+                          <X size={14} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div key={h.id} className="per-group">
+                  <div className="per-title">
+                    <span className="pe">{h.emoji}</span> {h.name}
+                  </div>
+                  <p className="per-hint">
+                    Sugerido: {nf(suggestedFor(h), h.target!.decimals ?? 0)} {h.target!.unit}
+                    {h.id === "agua" ? " (según tu peso)" : ""}
+                  </p>
+                  <Stepper
+                    compact
+                    label="Objetivo diario"
+                    value={valueFor(h)}
+                    unit={h.target!.unit}
+                    step={h.target!.step}
+                    min={0}
+                    decimals={h.target!.decimals ?? 0}
+                    onChange={(v) => setTargets((t) => ({ ...t, [h.id]: v }))}
+                  />
+                </div>
+              )
+            )}
+
+            {booleanOnes.length > 0 && (
+              <p className="per-hint" style={{ marginTop: 16 }}>
+                Sin objetivo numérico (se marcan a diario): {booleanOnes.map((h) => h.name).join(", ")}.
+              </p>
+            )}
+          </>
+        )}
+
+        {step === 4 && (
+          <>
+            <div className="wz-head">
+              <span className="wz-emoji">🎉</span>
+              <h2>¡Todo listo!</h2>
+            </div>
             <p className="sub">Este es tu punto de partida.</p>
             <div className="wz-summary">
               <div className="row">
@@ -184,10 +286,28 @@ export function OnboardingWizard() {
                   {nf(protein)} / {nf(carbs)} / {nf(fat)} g
                 </b>
               </div>
+              {selectedHabits.some((h) => h.id === "agua") && (
+                <div className="row">
+                  <span>Agua</span>
+                  <b>{nf(valueFor(HABITS.find((h) => h.id === "agua")!), 1)} L/día</b>
+                </div>
+              )}
+              {selectedHabits.some((h) => h.id === "caminar") && (
+                <div className="row">
+                  <span>Pasos</span>
+                  <b>{nf(valueFor(HABITS.find((h) => h.id === "caminar")!))} /día</b>
+                </div>
+              )}
               <div className="row">
                 <span>Hábitos</span>
-                <b>{habits.length} seleccionados</b>
+                <b>{selected.length} seleccionados</b>
               </div>
+              {selected.includes("suplementos") && supps.length > 0 && (
+                <div className="row">
+                  <span>Suplementos</span>
+                  <b>{supps.length} cargados</b>
+                </div>
+              )}
             </div>
           </>
         )}
