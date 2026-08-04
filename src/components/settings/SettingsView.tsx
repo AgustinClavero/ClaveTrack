@@ -6,11 +6,13 @@ import { GoalsPanel } from "./GoalsPanel";
 import { ProfilePanel } from "./ProfilePanel";
 import { HabitsPanel } from "./HabitsPanel";
 import { ScorePanel } from "./ScorePanel";
+import { SupplementsPanel } from "./SupplementsPanel";
 
 const TABS = [
   { k: "goals", l: "Objetivos" },
   { k: "profile", l: "Perfil" },
   { k: "habits", l: "Hábitos" },
+  { k: "supplements", l: "Suplementos" },
   { k: "score", l: "Cumplimiento" },
 ] as const;
 
@@ -36,7 +38,8 @@ export function SettingsView({ data }: { data: SettingsData }) {
       <div className="tab-body">
         {tab === "goals" && <GoalsPanel goals={data.goals} profile={data.profile} lastWeightKg={data.lastWeightKg} />}
         {tab === "profile" && <ProfilePanel profile={data.profile} />}
-        {tab === "habits" && <HabitsPanel habits={data.habits} />}
+        {tab === "habits" && <HabitsPanel habits={data.habits.filter((h) => h.groupKey !== "supplements")} />}
+        {tab === "supplements" && <SupplementsPanel items={data.habits.filter((h) => h.groupKey === "supplements")} />}
         {tab === "score" && <ScorePanel settings={data.settings} />}
       </div>
     </div>

@@ -5,6 +5,7 @@ import { WeightChart } from "@/components/modules/WeightChart";
 import { AddWeightButton } from "@/components/modules/AddWeightButton";
 import { AchievementGrid } from "@/components/modules/AchievementGrid";
 import { MilestoneTrack } from "@/components/modules/MilestoneTrack";
+import { DayBreakdown } from "@/components/modules/DayBreakdown";
 import { Ring } from "@/components/ui/Ring";
 import { weightMilestones, weightPace } from "@/lib/calculations/insights";
 
@@ -109,6 +110,10 @@ export default async function ProgressPage() {
 
         <div className="prog-ach">
           <AchievementGrid items={achievements} />
+        </div>
+
+        <div className="prog-days">
+          <DayBreakdown days={d.recentDays} threshold={d.threshold} />
         </div>
       </div>
     </section>

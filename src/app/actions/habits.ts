@@ -90,6 +90,7 @@ export async function upsertHabit(input: unknown): Promise<ActionResult<{ id: st
     emoji: parsed.data.emoji ?? null,
     is_key: parsed.data.isKey ?? false,
     category: parsed.data.category ?? "routine",
+    group_key: parsed.data.groupKey ?? null,
   };
 
   if (parsed.data.id) {

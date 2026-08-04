@@ -16,7 +16,7 @@ import {
   xpForScore,
   type DayScore,
 } from "@/lib/calculations/scoring";
-import { computeAchievements, type Achievement } from "@/lib/calculations/insights";
+import { computeAchievements, dayInsights, type Achievement, type Insight } from "@/lib/calculations/insights";
 import { dayWindow, recentDays, type DayCell } from "@/lib/date";
 import type { Habit, HabitCategory, Meal, MealType, NutritionGoals, WeightPoint } from "@/types";
 
@@ -155,9 +155,10 @@ type HabitRow = {
   is_key: boolean | null;
   display_order: number | null;
   category?: string | null;
+  group_key?: string | null;
 };
 
-const HABIT_COLS = "id, name, kind, target_value, unit, emoji, is_key, display_order, category";
+const HABIT_COLS = "id, name, kind, target_value, unit, emoji, is_key, display_order, category, group_key";
 
 function mapHabits(
   rows: HabitRow[],
@@ -177,6 +178,7 @@ function mapHabits(
       emoji: iconFor(h.name, h.emoji),
       isKey: h.is_key ?? false,
       category: (h.category ?? "routine") as Habit["category"],
+      groupKey: h.group_key ?? null,
     };
   });
 }
@@ -588,6 +590,13 @@ export async function getActivityDay(): Promise<ActivityDay | null> {
 // Progreso
 // ============================================================
 
+export interface DayDetail {
+  date: string;
+  label: string;
+  total: number;
+  items: { label: string; emoji: string; done: boolean; detail?: string }[];
+}
+
 export interface Progress {
   date: string;
   weight: WeightPoint[];
@@ -599,6 +608,8 @@ export interface Progress {
   daysLogged: number;
   perfectDays: number;
   avgScore: number | null;
+  threshold: number;
+  recentDays: DayDetail[];
 }
 
 /** Racha más larga del histórico (no solo la vigente). */
@@ -625,9 +636,8 @@ export async function getProgress(): Promise<Progress | null> {
   const ctx = await getUserContext();
   if (!ctx) return null;
   const supabase = getServerClient();
-  const weekCells = recentDays(7, ctx.timezone);
-
-  const [weightRes, historyRes, mealsCountRes] = await Promise.all([
+  const week = recentDays(7, ctx.timezone);
+  const [weightRes, historyRes, mealsCountRes, habitsRes, weekEntriesRes, weekMealsRes] = await Promise.all([
     supabase
       .from("body_entries")
       .select("log_date, weight_kg")
@@ -637,6 +647,19 @@ export async function getProgress(): Promise<Progress | null> {
       .limit(400),
     getScoreHistory(ctx),
     supabase.from("meals").select("id", { count: "exact", head: true }).eq("user_id", ctx.userId),
+    supabase.from("habits").select(HABIT_COLS).eq("user_id", ctx.userId).eq("active", true).order("display_order"),
+    supabase
+      .from("habit_entries")
+      .select("habit_id, done, value, log_date")
+      .eq("user_id", ctx.userId)
+      .gte("log_date", week[0].date)
+      .lte("log_date", ctx.today),
+    supabase
+      .from("meals")
+      .select("log_date")
+      .eq("user_id", ctx.userId)
+      .gte("log_date", week[0].date)
+      .lte("log_date", ctx.today),
   ]);
 
   const weight: WeightPoint[] = (weightRes.data ?? [])
@@ -646,7 +669,7 @@ export async function getProgress(): Promise<Progress | null> {
   const scoreByDate = new Map<string, number>();
   historyRes.forEach((r) => scoreByDate.set(r.log_date, r.total));
   const streak = computeStreak(scoreByDate, ctx.today, ctx.streakThreshold);
-  const calendar: CalendarDay[] = weekCells.map((c) => ({ ...c, score: scoreByDate.get(c.date) ?? null }));
+  const calendar: CalendarDay[] = week.map((c) => ({ ...c, score: scoreByDate.get(c.date) ?? null }));
 
   const totals = [...scoreByDate.values()];
   const perfectDays = totals.filter((t) => t >= 100).length;
@@ -669,6 +692,44 @@ export async function getProgress(): Promise<Progress | null> {
         ? weight[weight.length - 1].kg
         : 80;
 
+  // Detalle por día: qué se cumplió y qué no.
+  const habitRows = (habitsRes.data ?? []) as HabitRow[];
+  const entriesByDate = new Map<string, Map<string, { done: boolean; value: number }>>();
+  (weekEntriesRes.data ?? []).forEach((e) => {
+    if (!entriesByDate.has(e.log_date)) entriesByDate.set(e.log_date, new Map());
+    entriesByDate.get(e.log_date)!.set(e.habit_id, { done: e.done ?? false, value: Number(e.value ?? 0) });
+  });
+  const mealDates = new Set((weekMealsRes.data ?? []).map((m) => m.log_date));
+
+  const detail: DayDetail[] = [...week].reverse().map((c) => {
+    const m = entriesByDate.get(c.date);
+    const items = habitRows.map((h) => {
+      const e = m?.get(h.id);
+      const dec = ["l", "h"].includes((h.unit ?? "").toLowerCase()) ? 1 : 0;
+      return {
+        label: h.name,
+        emoji: iconFor(h.name, h.emoji),
+        done: e?.done ?? false,
+        detail:
+          h.target_value != null
+            ? `${new Intl.NumberFormat("es-AR", { minimumFractionDigits: dec, maximumFractionDigits: dec }).format(e?.value ?? 0)} / ${h.target_value} ${h.unit ?? ""}`.trim()
+            : undefined,
+      };
+    });
+    items.unshift({
+      label: "Comidas registradas",
+      emoji: "🍽",
+      done: mealDates.has(c.date),
+      detail: undefined,
+    });
+    return {
+      date: c.date,
+      label: `${c.weekday} ${c.dayNum} ${c.monthShort}`,
+      total: scoreByDate.get(c.date) ?? 0,
+      items,
+    };
+  });
+
   return {
     date: ctx.today,
     weight,
@@ -680,6 +741,8 @@ export async function getProgress(): Promise<Progress | null> {
     daysLogged: scoreByDate.size,
     perfectDays,
     avgScore,
+    threshold: ctx.streakThreshold,
+    recentDays: detail,
   };
 }
 
@@ -694,6 +757,7 @@ export interface ShellData {
   lastWeightKg: number | null;
   habits: Habit[];
   heightCm: number | null;
+  alerts: Insight[];
 }
 
 export async function getShellData(): Promise<ShellData | null> {
@@ -701,7 +765,7 @@ export async function getShellData(): Promise<ShellData | null> {
   if (!ctx) return null;
   const supabase = getServerClient();
 
-  const [logRes, lastWeightRes, history, habitsRes, entriesRes] = await Promise.all([
+  const [logRes, lastWeightRes, history, habitsRes, entriesRes, goalsRes, mealsRes] = await Promise.all([
     supabase
       .from("daily_logs")
       .select("mood, energy, sleep_quality, hunger, focus_note, checkin_done_at, water_ml")
@@ -724,15 +788,52 @@ export async function getShellData(): Promise<ShellData | null> {
       .order("display_order")
       .order("created_at"),
     supabase.from("habit_entries").select("habit_id, done, value").eq("user_id", ctx.userId).eq("log_date", ctx.today),
+    supabase
+      .from("nutrition_goals")
+      .select("kcal, protein_g, water_ml")
+      .eq("user_id", ctx.userId)
+      .order("effective_from", { ascending: false })
+      .limit(1),
+    supabase.from("meals").select("id, meal_items(kcal, protein_g)").eq("user_id", ctx.userId).eq("log_date", ctx.today),
   ]);
 
   const scoreByDate = new Map<string, number>();
   history.forEach((r) => scoreByDate.set(r.log_date, r.total));
   const log = logRes.data;
   const lastWeightKg = lastWeightRes.data?.[0]?.weight_kg != null ? Number(lastWeightRes.data[0].weight_kg) : null;
+  const habits = mapHabits((habitsRes.data ?? []) as HabitRow[], entriesRes.data ?? []);
+  const streak = computeStreak(scoreByDate, ctx.today, ctx.streakThreshold);
+
+  // Avisos de la campanita: mismas reglas que las recomendaciones de Hoy.
+  const goalRow = goalsRes.data?.[0];
+  const meals = mealsRes.data ?? [];
+  let kcal = 0;
+  let protein = 0;
+  meals.forEach((m) =>
+    (m.meal_items ?? []).forEach((it) => {
+      kcal += Number(it.kcal);
+      protein += Number(it.protein_g);
+    })
+  );
+  const waterHabit = habits.find((h) => h.unit.toLowerCase() === "l" && /agua/i.test(h.name));
+  const alerts = dayInsights({
+    score: 0,
+    breakdown: {} as never,
+    kcal,
+    kcalGoal: goalRow?.kcal ?? 0,
+    protein,
+    proteinGoal: goalRow?.protein_g ?? 0,
+    mealsCount: meals.length,
+    pendingHabits: habits.filter((h) => !h.done).map((h) => ({ name: h.name, emoji: h.emoji })),
+    waterMl: waterHabit ? waterHabit.value * 1000 : (log?.water_ml ?? 0),
+    waterGoalMl: waterHabit?.target ? waterHabit.target * 1000 : (goalRow?.water_ml ?? 0),
+    checkinDone: !!log?.checkin_done_at,
+    streak,
+    hour: new Date().getHours(),
+  });
 
   return {
-    streak: computeStreak(scoreByDate, ctx.today, ctx.streakThreshold),
+    streak,
     checkin: {
       done: !!log?.checkin_done_at,
       focusNote: log?.focus_note ?? null,
@@ -744,8 +845,9 @@ export async function getShellData(): Promise<ShellData | null> {
       waterMl: log?.water_ml ?? 0,
     },
     lastWeightKg,
-    habits: mapHabits((habitsRes.data ?? []) as HabitRow[], entriesRes.data ?? []),
+    habits,
     heightCm: ctx.profile?.height_cm != null ? Number(ctx.profile.height_cm) : null,
+    alerts,
   };
 }
 

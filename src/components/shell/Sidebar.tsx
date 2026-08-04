@@ -8,8 +8,10 @@ import { useUIStore } from "@/lib/store";
 import { LogoutButton } from "./LogoutButton";
 import { ThemeToggle } from "./ThemeToggle";
 import { CheckinButton } from "./CheckinButton";
+import { NotificationBell } from "./NotificationBell";
+import type { Insight } from "@/lib/calculations/insights";
 
-export function Sidebar({ streak }: { streak: number }) {
+export function Sidebar({ streak, alerts }: { streak: number; alerts: Insight[] }) {
   const pathname = usePathname();
   const openSheet = useUIStore((s) => s.openSheet);
 
@@ -42,6 +44,7 @@ export function Sidebar({ streak }: { streak: number }) {
         <div className="side-streak">
           <span className="streak-pill">🔥 {streak}</span>
           <span className="ss-lab">racha de días</span>
+          <NotificationBell items={alerts} />
         </div>
         {NAV_SECONDARY.map((n) => (
           <Link key={n.href} href={n.href} className={`side-link${pathname === n.href ? " active" : ""}`}>

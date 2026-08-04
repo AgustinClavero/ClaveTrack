@@ -308,6 +308,7 @@ export type Database = {
           created_at: string | null
           display_order: number | null
           emoji: string | null
+          group_key: string | null
           id: string
           is_key: boolean | null
           kind: string
@@ -324,6 +325,7 @@ export type Database = {
           created_at?: string | null
           display_order?: number | null
           emoji?: string | null
+          group_key?: string | null
           id?: string
           is_key?: boolean | null
           kind: string
@@ -340,6 +342,7 @@ export type Database = {
           created_at?: string | null
           display_order?: number | null
           emoji?: string | null
+          group_key?: string | null
           id?: string
           is_key?: boolean | null
           kind?: string

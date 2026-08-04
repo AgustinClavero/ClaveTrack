@@ -16,9 +16,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <div className="app">
-      <Sidebar streak={shell.streak} />
+      <Sidebar streak={shell.streak} alerts={shell.alerts} />
       <main className="main">
-        <MobileHeader streak={shell.streak} />
+        <MobileHeader streak={shell.streak} alerts={shell.alerts} />
         {children}
       </main>
       <BottomNav />

@@ -33,6 +33,7 @@ export const habitUpsertSchema = z.object({
   emoji: z.string().trim().max(8).nullable().optional(),
   isKey: z.boolean().optional(),
   category: habitCategory.optional(),
+  groupKey: z.string().trim().max(30).nullable().optional(),
 });
 
 // ---------- Actividad ----------

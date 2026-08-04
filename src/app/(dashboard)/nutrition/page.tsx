@@ -10,6 +10,7 @@ import { MealRow } from "@/components/modules/MealRow";
 import { AddMealButton } from "@/components/modules/AddMealButton";
 import { WaterTracker } from "@/components/modules/WaterTracker";
 import { HabitCard } from "@/components/modules/HabitCard";
+import { SupplementCard } from "@/components/modules/SupplementCard";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,9 @@ export default async function NutritionPage() {
 
   const { goals, meals, totals } = d;
   const remaining = Math.max(0, goals.kcal - totals.kcal);
+  const allHabits = habitsData?.habits ?? [];
+  const supplements = allHabits.filter((h) => h.groupKey === "supplements");
+  const otherHabits = allHabits.filter((h) => h.groupKey !== "supplements");
 
   return (
     <section className="screen">
@@ -60,7 +64,9 @@ export default async function NutritionPage() {
 
         <WaterTracker waterMl={d.waterMl} goalMl={goals.waterMl} />
 
-        {habitsData && habitsData.habits.length > 0 && (
+        <SupplementCard items={supplements} />
+
+        {otherHabits.length > 0 && (
           <div className="cat-habits">
             <div className="sec-head">
               <span className="eyebrow">Hábitos de alimentación</span>
@@ -69,7 +75,7 @@ export default async function NutritionPage() {
               </Link>
             </div>
             <div className="habit-grid">
-              {habitsData.habits.map((h) => (
+              {otherHabits.map((h) => (
                 <HabitCard key={h.id} habit={h} />
               ))}
             </div>

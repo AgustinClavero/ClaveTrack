@@ -71,6 +71,8 @@ export interface Habit {
   emoji: string;
   isKey: boolean;
   category: HabitCategory;
+  /** Agrupador dentro de la categoría (p. ej. "supplements"). */
+  groupKey: string | null;
   /** Últimos 7 días para el mini gráfico (más viejo → más nuevo). */
   history?: { date: string; value: number; done: boolean }[];
 }
