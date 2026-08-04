@@ -47,13 +47,18 @@ export interface DefaultFood {
 
 export const DEFAULT_FOODS: DefaultFood[] = [
   // ---------- 🍗 Proteínas ----------
-  { name: "Pollo pechuga", category: "proteinas", base: "100g", kcal: 120, protein: 22.5, carbs: 0, fat: 2.6, favorite: true },
-  { name: "Pollo muslo", category: "proteinas", base: "100g", kcal: 177, protein: 18, carbs: 0, fat: 11 },
-  { name: "Atún al natural", category: "proteinas", base: "100g", kcal: 108, protein: 24, carbs: 0, fat: 1, unitLabel: "lata", unitGrams: 120, favorite: true },
-  { name: "Atún en aceite", category: "proteinas", base: "100g", kcal: 190, protein: 22, carbs: 0, fat: 11, unitLabel: "lata", unitGrams: 120 },
-  { name: "Huevo", category: "proteinas", base: "100g", kcal: 143, protein: 12.6, carbs: 0.7, fat: 9.5, unitLabel: "huevo", unitGrams: 50, favorite: true },
+  // Cocinar concentra: la carne pierde ~25 % de agua y sube todo por 100 g.
+  { name: "Pechuga de pollo", category: "proteinas", base: "100g", kcal: 120, protein: 22.5, carbs: 0, fat: 2.6, state: "crudo" },
+  { name: "Pechuga de pollo", category: "proteinas", base: "100g", kcal: 165, protein: 31, carbs: 0, fat: 3.6, state: "cocido", favorite: true },
+  { name: "Muslo de pollo", category: "proteinas", base: "100g", kcal: 119, protein: 19.6, carbs: 0, fat: 3.9, state: "crudo" },
+  { name: "Muslo de pollo", category: "proteinas", base: "100g", kcal: 175, protein: 26, carbs: 0, fat: 7.6, state: "cocido" },
+  { name: "Carne vacuna magra", category: "proteinas", base: "100g", kcal: 137, protein: 21.5, carbs: 0, fat: 5, state: "crudo" },
+  { name: "Carne vacuna magra", category: "proteinas", base: "100g", kcal: 190, protein: 30, carbs: 0, fat: 7.5, state: "cocido", favorite: true },
+  // El atún se pesa escurrido: el líquido no aporta.
+  { name: "Atún al natural (escurrido)", category: "proteinas", base: "100g", kcal: 108, protein: 24, carbs: 0, fat: 1, unitLabel: "lata", unitGrams: 120, favorite: true },
+  { name: "Atún en aceite (escurrido)", category: "proteinas", base: "100g", kcal: 190, protein: 22, carbs: 0, fat: 11, unitLabel: "lata", unitGrams: 120 },
+  { name: "Huevo entero", category: "proteinas", base: "100g", kcal: 143, protein: 12.6, carbs: 0.7, fat: 9.5, unitLabel: "huevo", unitGrams: 50, favorite: true },
   { name: "Clara de huevo", category: "proteinas", base: "100g", kcal: 52, protein: 11, carbs: 0.7, fat: 0.2, unitLabel: "clara", unitGrams: 33 },
-  { name: "Carne magra (nalga)", category: "proteinas", base: "100g", kcal: 137, protein: 21.5, carbs: 0, fat: 5 },
   { name: "Peceto", category: "proteinas", base: "100g", kcal: 131, protein: 22, carbs: 0, fat: 4.5 },
   { name: "Lomo", category: "proteinas", base: "100g", kcal: 143, protein: 22, carbs: 0, fat: 6 },
   { name: "Carne picada común", category: "proteinas", base: "100g", kcal: 250, protein: 17, carbs: 0, fat: 20 },
@@ -70,8 +75,10 @@ export const DEFAULT_FOODS: DefaultFood[] = [
   { name: "Arroz integral", category: "carbohidratos", base: "100g", kcal: 123, protein: 2.6, carbs: 26, fat: 1, fiber: 1.6, state: "cocido" },
   { name: "Fideos", category: "carbohidratos", base: "100g", kcal: 371, protein: 13, carbs: 75, fat: 1.5, fiber: 3.2, state: "crudo" },
   { name: "Fideos", category: "carbohidratos", base: "100g", kcal: 158, protein: 5.8, carbs: 31, fat: 0.9, fiber: 1.8, state: "cocido", favorite: true },
-  { name: "Papa", category: "carbohidratos", base: "100g", kcal: 87, protein: 1.9, carbs: 20, fat: 0.1, fiber: 1.8, state: "cocido" },
-  { name: "Batata", category: "carbohidratos", base: "100g", kcal: 90, protein: 2, carbs: 21, fat: 0.2, fiber: 3.3, state: "cocido" },
+  { name: "Papa", category: "carbohidratos", base: "100g", kcal: 77, protein: 2, carbs: 17, fat: 0.1, fiber: 2.2, state: "crudo" },
+  { name: "Papa hervida", category: "carbohidratos", base: "100g", kcal: 87, protein: 1.9, carbs: 20, fat: 0.1, fiber: 1.8, state: "cocido", favorite: true },
+  { name: "Batata", category: "carbohidratos", base: "100g", kcal: 86, protein: 1.6, carbs: 20, fat: 0.1, fiber: 3, state: "crudo" },
+  { name: "Batata hervida", category: "carbohidratos", base: "100g", kcal: 90, protein: 2, carbs: 21, fat: 0.2, fiber: 3.3, state: "cocido", favorite: true },
   { name: "Avena instantánea", category: "carbohidratos", base: "100g", kcal: 389, protein: 16.9, carbs: 66, fat: 6.9, fiber: 10.6, unitLabel: "cda", unitGrams: 15, favorite: true },
   { name: "Harina de avena", category: "carbohidratos", base: "100g", kcal: 380, protein: 14, carbs: 66, fat: 6.5, fiber: 9 },
   { name: "Pan integral", category: "carbohidratos", base: "100g", kcal: 247, protein: 13, carbs: 41, fat: 3.4, fiber: 7, unitLabel: "rebanada", unitGrams: 32 },
