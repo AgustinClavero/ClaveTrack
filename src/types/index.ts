@@ -59,8 +59,13 @@ export interface Habit {
   id: UUID;
   name: string;
   kind: HabitKind;
-  meta?: string; // texto de progreso, ej. "1,4 / 2,5 L"
   done: boolean;
+  /** Progreso numérico del día (hábitos numeric/duration). */
+  value: number;
+  target: number | null;
+  unit: string;
+  emoji: string;
+  isKey: boolean;
 }
 
 export interface WeightPoint {
@@ -68,21 +73,5 @@ export interface WeightPoint {
   kg: number;
 }
 
-export interface BodyMeasure {
-  label: string;
-  cm: number;
-  deltaCm: number;
-}
-
-/** Pesos de las áreas para el cálculo de cumplimiento (0..1). */
-export interface ScoreWeights {
-  nutrition: number;
-  tasks: number;
-  activity: number;
-  study: number;
-  habits: number;
-  sleep: number;
-}
-
-/** Puntuación por área (0..100). */
-export type AreaScores = Record<keyof ScoreWeights, number>;
+/** Resultado uniforme de toda Server Action. */
+export type ActionResult<T = void> = { ok: true; data: T } | { ok: false; error: string };

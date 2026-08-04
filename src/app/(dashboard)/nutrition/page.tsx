@@ -1,9 +1,14 @@
 import { redirect } from "next/navigation";
-import { getDashboard } from "@/lib/data/queries";
-import { dayTotals, mealTotals } from "@/lib/calculations/macros";
+import Link from "next/link";
+import { Settings } from "lucide-react";
+import { getNutritionDay } from "@/lib/data/queries";
+import { mealTotals } from "@/lib/calculations/macros";
 import { nf } from "@/lib/utils";
 import { Ring } from "@/components/ui/Ring";
 import { MacroRing } from "@/components/modules/MacroRing";
+import { MealRow } from "@/components/modules/MealRow";
+import { AddMealButton } from "@/components/modules/AddMealButton";
+import { WaterTracker } from "@/components/modules/WaterTracker";
 
 export const dynamic = "force-dynamic";
 
@@ -17,18 +22,29 @@ const MEAL_LABEL: Record<string, string> = {
 };
 
 export default async function NutritionPage() {
-  const d = await getDashboard();
+  const d = await getNutritionDay();
   if (!d) redirect("/login");
   if (!d.onboarded) redirect("/onboarding");
 
-  const { goals, meals } = d;
-  const totals = dayTotals(meals);
+  const { goals, meals, totals } = d;
   const remaining = Math.max(0, goals.kcal - totals.kcal);
 
   return (
     <section className="screen">
-      <div className="screen-title">Nutrición</div>
-      <div className="stack" style={{ marginTop: 14 }}>
+      <header className="screen-head">
+        <div>
+          <h1 className="screen-title">Nutrición</h1>
+          <p className="screen-sub">
+            {meals.length === 0 ? "Sin comidas todavía" : `${meals.length} ${meals.length === 1 ? "comida" : "comidas"} hoy`}
+          </p>
+        </div>
+        <Link href="/settings" className="head-action">
+          <Settings size={17} />
+          <span>Objetivos</span>
+        </Link>
+      </header>
+
+      <div className="nut-grid">
         <div className="card cal-card">
           <div>
             <div className="cal-num">
@@ -48,35 +64,35 @@ export default async function NutritionPage() {
           <MacroRing label="Grasa" value={totals.fat} goal={goals.fat} emoji="🥑" color="var(--blue)" tint="var(--blue-tint)" />
         </div>
 
-        <div className="sec-label" style={{ margin: "8px 4px 0" }}>
-          Comidas de hoy
-        </div>
-        {meals.length === 0 ? (
-          <div className="card" style={{ textAlign: "center", color: "var(--muted)" }}>
-            Sin comidas registradas. Tocá <b>+</b> para agregar la primera.
+        <WaterTracker waterMl={d.waterMl} goalMl={goals.waterMl} />
+
+        <div className="nut-meals">
+          <div className="sec-head">
+            <span className="eyebrow">Comidas de hoy</span>
+            <AddMealButton />
           </div>
-        ) : (
-          meals.map((m) => {
-            const t = mealTotals(m);
-            const names = m.items.map((i) => i.foodName).join(" · ");
-            return (
-              <div key={m.id} className="meal-item">
-                <div className="thumb" style={{ background: "var(--surface-2)" }}>
-                  {m.emoji ?? "🍽"}
-                </div>
-                <div className="mi">
-                  <div className="mt">
-                    <span className="name">{MEAL_LABEL[m.type]}</span>
-                    <span className="time">{nf(t.kcal)} kcal</span>
-                  </div>
-                  <div className="mi-macros" style={{ marginTop: 4 }}>
-                    <span>{names}</span>
-                  </div>
-                </div>
-              </div>
-            );
-          })
-        )}
+
+          {meals.length === 0 ? (
+            <div className="card empty-card">
+              <p>Todavía no registraste nada hoy.</p>
+              <AddMealButton variant="solid" label="Registrar mi primera comida" />
+            </div>
+          ) : (
+            <div className="stack-sm">
+              {meals.map((m) => (
+                <MealRow
+                  key={m.id}
+                  id={m.id}
+                  label={MEAL_LABEL[m.type]}
+                  emoji={m.emoji ?? "🍽"}
+                  time={m.time}
+                  kcal={mealTotals(m).kcal}
+                  items={m.items.map((i) => i.foodName)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </section>
   );

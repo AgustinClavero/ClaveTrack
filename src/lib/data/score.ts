@@ -1,24 +1,25 @@
 // ============================================================
 // Materialización del score diario en daily_scores.
-// - upsertDayScore: escribe un DayScore ya calculado (lo usa getDashboard,
-//   que ya tiene los datos del día en memoria).
+// - upsertDayScore: escribe un DayScore ya calculado.
 // - materializeDayScore: recalcula el día desde la DB y lo persiste
 //   (lo usan las Server Actions tras cada mutación).
+// El cálculo de áreas vive en computeAreasForDay (scoring.ts):
+// misma lógica para pantalla y persistencia, sin divergencias.
 // ============================================================
 
-import type { SupabaseClient } from "@supabase/supabase-js";
 import {
+  computeAreasForDay,
   computeDay,
   weightsFromSettings,
   xpForScore,
   type AreaKey,
-  type AreaResult,
   type DayScore,
 } from "@/lib/calculations/scoring";
+import type { ServerClient } from "@/lib/supabase/server";
 
 /** Persiste un DayScore ya calculado. No escribe si el día no tiene datos. */
 export async function upsertDayScore(
-  supabase: SupabaseClient,
+  supabase: ServerClient,
   userId: string,
   date: string,
   score: DayScore,
@@ -43,7 +44,7 @@ export async function upsertDayScore(
 }
 
 /** Recalcula el score de un día desde la DB y lo materializa. */
-export async function materializeDayScore(supabase: SupabaseClient, userId: string, date: string) {
+export async function materializeDayScore(supabase: ServerClient, userId: string, date: string) {
   const [goalsRes, mealsRes, habitsRes, entriesRes, logRes, settingsRes] = await Promise.all([
     supabase
       .from("nutrition_goals")
@@ -58,39 +59,30 @@ export async function materializeDayScore(supabase: SupabaseClient, userId: stri
     supabase.from("user_settings").select("*").eq("user_id", userId).maybeSingle(),
   ]);
 
-  const goals = goalsRes.data?.[0];
+  const goalRow = goalsRes.data?.[0] ?? null;
   const meals = mealsRes.data ?? [];
-  const habits = habitsRes.data ?? [];
-  const entries = entriesRes.data ?? [];
-  const log: any = logRes.data;
+  const activeHabits = habitsRes.data ?? [];
+  const entryByHabit = new Map((entriesRes.data ?? []).map((e) => [e.habit_id, e.done ?? false]));
 
-  // Totales del día (suma de snapshots de meal_items).
   let kcal = 0;
   let protein = 0;
-  meals.forEach((m: any) =>
-    (m.meal_items ?? []).forEach((it: any) => {
+  meals.forEach((m) =>
+    (m.meal_items ?? []).forEach((it) => {
       kcal += Number(it.kcal);
       protein += Number(it.protein_g);
     })
   );
 
-  const nutritionAdh = goals
-    ? Math.round(
-        (Math.min(100, (kcal / (goals.kcal || 1)) * 100) +
-          Math.min(100, (protein / (goals.protein_g || 1)) * 100)) /
-          2
-      )
-    : 0;
+  const areas = computeAreasForDay({
+    totals: { kcal, protein },
+    mealCount: meals.length,
+    goals: goalRow ? { kcal: goalRow.kcal, protein: goalRow.protein_g } : null,
+    // Solo hábitos ACTIVOS: los archivados no puntúan aunque tengan entry.
+    habits: activeHabits.map((h) => ({ done: entryByHabit.get(h.id) ?? false })),
+    sleepQuality: logRes.data?.sleep_quality ?? null,
+  });
 
-  const doneCount = entries.filter((e: any) => e.done).length;
-
-  const areas: Partial<Record<AreaKey, AreaResult>> = {
-    nutrition: { value: nutritionAdh, hasData: meals.length > 0 },
-    habits: { value: habits.length ? (doneCount / habits.length) * 100 : 0, hasData: habits.length > 0 },
-    rest: { value: (log?.sleep_quality ?? 0) * 10, hasData: log?.sleep_quality != null },
-  };
-
-  const weights = weightsFromSettings(settingsRes.data);
+  const weights = weightsFromSettings(settingsRes.data ?? undefined);
   const score = computeDay(areas, weights);
   await upsertDayScore(supabase, userId, date, score, weights);
   return score;

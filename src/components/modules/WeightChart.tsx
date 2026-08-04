@@ -1,38 +1,71 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { WeightPoint } from "@/types";
 import { nf } from "@/lib/utils";
 
-const RANGES = ["90D", "6M", "1A", "Todo"];
+const RANGES = [
+  { k: "30D", days: 30 },
+  { k: "90D", days: 90 },
+  { k: "1A", days: 365 },
+  { k: "Todo", days: Infinity },
+] as const;
 
 export function WeightChart({ series, targetKg }: { series: WeightPoint[]; targetKg: number }) {
-  const [range, setRange] = useState("6M");
+  const [range, setRange] = useState<string>("90D");
+
+  // El rango ahora filtra de verdad la serie.
+  const data = useMemo(() => {
+    const days = RANGES.find((r) => r.k === range)?.days ?? Infinity;
+    if (!isFinite(days)) return series;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+    const iso = cutoff.toISOString().slice(0, 10);
+    const filtered = series.filter((p) => p.date >= iso);
+    return filtered.length >= 2 ? filtered : series;
+  }, [series, range]);
 
   const W = 320;
   const H = 160;
-  const kgs = series.map((p) => p.kg);
+  const kgs = data.map((p) => p.kg);
   const min = Math.min(...kgs, targetKg) - 1;
-  const max = Math.max(...kgs) + 1;
-  const x = (i: number) => 6 + (i * (W - 12)) / (series.length - 1);
-  const y = (kg: number) => 10 + ((max - kg) / (max - min)) * (H - 20);
+  const max = Math.max(...kgs, targetKg) + 1;
+  const x = (i: number) => 6 + (i * (W - 12)) / Math.max(1, data.length - 1);
+  const y = (kg: number) => 10 + ((max - kg) / (max - min || 1)) * (H - 20);
 
-  const pts = series.map((p, i) => `${x(i)},${y(p.kg)}`).join(" ");
-  const area = `${pts} ${x(series.length - 1)},${H} ${x(0)},${H}`;
-  const last = series[series.length - 1];
-  const lastX = x(series.length - 1);
+  const pts = data.map((p, i) => `${x(i)},${y(p.kg)}`).join(" ");
+  const area = `${pts} ${x(data.length - 1)},${H} ${x(0)},${H}`;
+  const first = data[0];
+  const last = data[data.length - 1];
+  const lastX = x(data.length - 1);
   const lastY = y(last.kg);
   const targetY = y(targetKg);
-  const pct = Math.round(
-    (Math.min(series[0].kg - last.kg, series[0].kg - targetKg) / (series[0].kg - targetKg)) * 100
-  );
+
+  const delta = last.kg - first.kg;
+  const toGo = last.kg - targetKg;
 
   return (
-    <div className="card">
+    <div className="card chart-card">
       <div className="chart-head">
-        <b>Progreso del peso</b>
-        <span className="goal-pill">🏁 {pct}% de la meta</span>
+        <div>
+          <span className="eyebrow">Progreso del peso</span>
+          <div className="ch-delta">
+            {delta === 0 ? (
+              "Sin cambios en el período"
+            ) : (
+              <>
+                <b className={delta < 0 ? "good" : ""}>
+                  {delta > 0 ? "+" : ""}
+                  {nf(delta, 1)} kg
+                </b>{" "}
+                en el período
+              </>
+            )}
+          </div>
+        </div>
+        <span className="goal-pill">{toGo > 0 ? `faltan ${nf(toGo, 1)} kg` : "meta alcanzada 🎉"}</span>
       </div>
+
       <div className="chart-wrap">
         <div className="tip" style={{ left: `${(lastX / W) * 100}%`, top: `${(lastY / H) * 100}%` }}>
           {nf(last.kg, 1)} kg
@@ -48,14 +81,19 @@ export function WeightChart({ series, targetKg }: { series: WeightPoint[]; targe
           <line x1="0" y1={targetY} x2={W} y2={targetY} stroke="var(--muted)" strokeWidth="1.5" strokeDasharray="5 5" />
         </svg>
       </div>
-      <div className="segs">
+
+      <div className="segs" role="group" aria-label="Rango del gráfico">
         {RANGES.map((r) => (
-          <button key={r} className={`seg${range === r ? " active" : ""}`} onClick={() => setRange(r)}>
-            {r}
+          <button
+            key={r.k}
+            className={`seg${range === r.k ? " active" : ""}`}
+            onClick={() => setRange(r.k)}
+            aria-pressed={range === r.k}
+          >
+            {r.k}
           </button>
         ))}
       </div>
-      <div className="motiv">La constancia es clave, y lo estás logrando. 💪</div>
     </div>
   );
 }

@@ -1,10 +1,8 @@
 import { ThemeToggle } from "./ThemeToggle";
 import { LogoutButton } from "./LogoutButton";
 import { CheckinButton } from "./CheckinButton";
-import { getStreak } from "@/lib/data/queries";
 
-export async function MobileHeader() {
-  const streak = await getStreak();
+export function MobileHeader({ streak }: { streak: number }) {
   return (
     <div className="head">
       <div className="hb">

@@ -1,13 +1,4 @@
-import {
-  Home,
-  Utensils,
-  LineChart,
-  ListChecks,
-  Target,
-  FolderKanban,
-  BarChart3,
-  type LucideIcon,
-} from "lucide-react";
+import { Home, Utensils, LineChart, ListChecks, Settings, type LucideIcon } from "lucide-react";
 
 export interface NavDef {
   href: string;
@@ -15,7 +6,7 @@ export interface NavDef {
   Icon: LucideIcon;
 }
 
-/** Secciones activas en Fase 1. */
+/** Secciones activas. */
 export const NAV_MAIN: NavDef[] = [
   { href: "/today", label: "Hoy", Icon: Home },
   { href: "/nutrition", label: "Nutrición", Icon: Utensils },
@@ -23,9 +14,5 @@ export const NAV_MAIN: NavDef[] = [
   { href: "/habits", label: "Hábitos", Icon: ListChecks },
 ];
 
-/** Secciones de fases siguientes (visibles en el sidebar, deshabilitadas). */
-export const NAV_SOON: NavDef[] = [
-  { href: "#", label: "Objetivos", Icon: Target },
-  { href: "#", label: "Proyectos", Icon: FolderKanban },
-  { href: "#", label: "Estadísticas", Icon: BarChart3 },
-];
+/** Secciones secundarias del sidebar (desktop). */
+export const NAV_SECONDARY: NavDef[] = [{ href: "/settings", label: "Ajustes", Icon: Settings }];

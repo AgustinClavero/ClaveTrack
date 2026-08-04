@@ -2,21 +2,18 @@
 
 import { create } from "zustand";
 
+/** Hojas/modales de la app. Solo puede haber una abierta a la vez. */
+export type SheetId = "register" | "checkin" | "meal" | "weight";
+
 interface UIState {
-  sheetOpen: boolean;
-  openSheet: () => void;
+  activeSheet: SheetId | null;
+  openSheet: (id: SheetId) => void;
   closeSheet: () => void;
-  checkinOpen: boolean;
-  openCheckin: () => void;
-  closeCheckin: () => void;
 }
 
-/** Estado local efímero de la UI (Zustand). */
+/** Estado local efímero de la UI (Zustand). Nada de datos de servidor acá. */
 export const useUIStore = create<UIState>((set) => ({
-  sheetOpen: false,
-  openSheet: () => set({ sheetOpen: true }),
-  closeSheet: () => set({ sheetOpen: false }),
-  checkinOpen: false,
-  openCheckin: () => set({ checkinOpen: true }),
-  closeCheckin: () => set({ checkinOpen: false }),
+  activeSheet: null,
+  openSheet: (id) => set({ activeSheet: id }),
+  closeSheet: () => set({ activeSheet: null }),
 }));

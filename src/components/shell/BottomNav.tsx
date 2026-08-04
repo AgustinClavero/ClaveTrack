@@ -25,7 +25,7 @@ export function BottomNav() {
           </Link>
         ))}
       </div>
-      <button className="fab" onClick={openSheet} aria-label="Registrar">
+      <button className="fab" onClick={() => openSheet("register")} aria-label="Registrar">
         <Plus size={26} strokeWidth={2.5} />
       </button>
     </div>

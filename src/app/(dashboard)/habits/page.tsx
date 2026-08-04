@@ -1,21 +1,38 @@
 import { redirect } from "next/navigation";
-import { getDashboard } from "@/lib/data/queries";
+import Link from "next/link";
+import { Settings } from "lucide-react";
+import { getHabitsDay } from "@/lib/data/queries";
 import { HabitList } from "@/components/modules/HabitList";
 
 export const dynamic = "force-dynamic";
 
 export default async function HabitsPage() {
-  const d = await getDashboard();
+  const d = await getHabitsDay();
   if (!d) redirect("/login");
-  if (!d.onboarded) redirect("/onboarding");
+
+  const done = d.habits.filter((h) => h.done).length;
+  const pct = d.habits.length ? Math.round((done / d.habits.length) * 100) : 0;
 
   return (
     <section className="screen">
-      <div className="screen-title">Hábitos</div>
-      <div style={{ marginTop: 14 }}>
-        <HabitList initial={d.habits} date={d.date} />
+      <header className="screen-head">
+        <div>
+          <h1 className="screen-title">Hábitos</h1>
+          <p className="screen-sub">
+            {done} de {d.habits.length} hoy · {pct}%
+          </p>
+        </div>
+        <Link href="/settings" className="head-action">
+          <Settings size={17} />
+          <span>Gestionar</span>
+        </Link>
+      </header>
+
+      <div className="stack">
+        <HabitList initial={d.habits} />
         <p className="note">
-          Tocá cualquier hábito para marcarlo. La racha no exige perfección: el día cuenta si superás tu umbral (75%).
+          Tocá el círculo para marcar, o usá + / − en los que llevan cantidad. El día cuenta para la racha si superás
+          el {d.threshold}%.
         </p>
       </div>
     </section>

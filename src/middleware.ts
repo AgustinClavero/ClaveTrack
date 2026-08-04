@@ -1,7 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PROTECTED = ["/today", "/nutrition", "/progress", "/habits", "/settings"];
+// Lista NEGRA: todo requiere sesión salvo lo de acá.
+// Así cada ruta nueva nace protegida sin tener que acordarse de agregarla.
+const PUBLIC = ["/login", "/auth"];
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -28,9 +30,9 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
-  const isProtected = PROTECTED.some((p) => path.startsWith(p));
+  const isPublic = PUBLIC.some((p) => path === p || path.startsWith(p + "/"));
 
-  if (!user && isProtected) {
+  if (!user && !isPublic) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
   if (user && path === "/login") {

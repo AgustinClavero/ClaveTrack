@@ -62,6 +62,42 @@ export function computeDay(
   return { total, breakdown, activeAreas: active };
 }
 
+// ---------- Áreas del día (ÚNICA fuente de verdad del cálculo) ----------
+// La usan tanto la lectura (dashboard) como la materialización (daily_scores):
+// así el score en pantalla y el persistido nunca divergen.
+
+export interface DayAreaInputs {
+  /** Totales de comidas del día (suma de meal_items). */
+  totals: { kcal: number; protein: number };
+  mealCount: number;
+  goals: { kcal: number; protein: number } | null;
+  /** Hábitos ACTIVOS del día con su estado. */
+  habits: { done: boolean }[];
+  /** Calidad de sueño 1..10 del check-in (null = sin dato). */
+  sleepQuality: number | null;
+}
+
+export function computeAreasForDay(i: DayAreaInputs): Partial<Record<AreaKey, AreaResult>> {
+  const nutritionAdh =
+    i.goals && i.mealCount > 0
+      ? Math.round(
+          (Math.min(100, (i.totals.kcal / (i.goals.kcal || 1)) * 100) +
+            Math.min(100, (i.totals.protein / (i.goals.protein || 1)) * 100)) /
+            2
+        )
+      : 0;
+  const doneCount = i.habits.filter((h) => h.done).length;
+
+  return {
+    nutrition: { value: nutritionAdh, hasData: i.mealCount > 0 },
+    habits: {
+      value: i.habits.length ? (doneCount / i.habits.length) * 100 : 0,
+      hasData: i.habits.length > 0,
+    },
+    rest: { value: (i.sleepQuality ?? 0) * 10, hasData: i.sleepQuality != null },
+  };
+}
+
 export type ScoreLabel = "Excelente" | "Buen día" | "Aceptable" | "Revisar";
 
 export function scoreLabel(score: number): ScoreLabel {
