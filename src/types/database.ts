@@ -196,10 +196,13 @@ export type Database = {
           carbs_g: number
           category: string
           created_at: string | null
+          default_qty: number | null
           fat_g: number
           fiber_g: number
           id: string
+          is_dressing: boolean
           is_favorite: boolean
+          is_mix: boolean
           kcal: number
           name: string
           protein_g: number
@@ -217,10 +220,13 @@ export type Database = {
           carbs_g?: number
           category?: string
           created_at?: string | null
+          default_qty?: number | null
           fat_g?: number
           fiber_g?: number
           id?: string
+          is_dressing?: boolean
           is_favorite?: boolean
+          is_mix?: boolean
           kcal?: number
           name: string
           protein_g?: number
@@ -238,10 +244,13 @@ export type Database = {
           carbs_g?: number
           category?: string
           created_at?: string | null
+          default_qty?: number | null
           fat_g?: number
           fiber_g?: number
           id?: string
+          is_dressing?: boolean
           is_favorite?: boolean
+          is_mix?: boolean
           kcal?: number
           name?: string
           protein_g?: number

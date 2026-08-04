@@ -21,10 +21,13 @@ export interface FoodHit {
   unitGrams: number | null;
   state: "crudo" | "cocido" | null;
   isFavorite: boolean;
+  isMix: boolean;
+  isDressing: boolean;
+  defaultQty: number | null;
 }
 
 const FOOD_COLS =
-  "id, name, base, category, brand, kcal, protein_g, carbs_g, fat_g, unit_label, unit_grams, state, is_favorite";
+  "id, name, base, category, brand, kcal, protein_g, carbs_g, fat_g, unit_label, unit_grams, state, is_favorite, is_mix, is_dressing, default_qty";
 
 type FoodRow = {
   id: string;
@@ -40,6 +43,9 @@ type FoodRow = {
   unit_grams: number | null;
   state: string | null;
   is_favorite: boolean;
+  is_mix: boolean;
+  is_dressing: boolean;
+  default_qty: number | null;
 };
 
 function mapFood(f: FoodRow): FoodHit {
@@ -57,6 +63,9 @@ function mapFood(f: FoodRow): FoodHit {
     unitGrams: f.unit_grams != null ? Number(f.unit_grams) : null,
     state: (f.state as "crudo" | "cocido" | null) ?? null,
     isFavorite: f.is_favorite,
+    isMix: f.is_mix,
+    isDressing: f.is_dressing,
+    defaultQty: f.default_qty != null ? Number(f.default_qty) : null,
   };
 }
 
@@ -64,6 +73,8 @@ export interface FoodPickerData {
   favorites: FoodHit[];
   recent: FoodHit[];
   recipes: RecipeHit[];
+  /** Aderezos que se ofrecen al cargar una ensalada. */
+  dressings: FoodHit[];
 }
 
 export interface RecipeHit {
@@ -82,7 +93,7 @@ export async function getFoodPickerData(): Promise<ActionResult<FoodPickerData>>
   if (!ctx) return { ok: false, error: "Sesión expirada." };
   const supabase = getServerClient();
 
-  const [favRes, recentRes, recipesRes] = await Promise.all([
+  const [favRes, recentRes, recipesRes, dressRes] = await Promise.all([
     supabase.from("foods").select(FOOD_COLS).eq("user_id", ctx.userId).eq("is_favorite", true).order("name").limit(24),
     // Recientes: últimos alimentos usados en comidas propias.
     supabase
@@ -99,6 +110,7 @@ export async function getFoodPickerData(): Promise<ActionResult<FoodPickerData>>
       .order("is_favorite", { ascending: false })
       .order("name")
       .limit(20),
+    supabase.from("foods").select(FOOD_COLS).eq("user_id", ctx.userId).eq("is_dressing", true).order("name"),
   ]);
 
   // Dedup preservando el orden de uso.
@@ -138,7 +150,12 @@ export async function getFoodPickerData(): Promise<ActionResult<FoodPickerData>>
 
   return {
     ok: true,
-    data: { favorites: (favRes.data ?? []).map((f) => mapFood(f as FoodRow)), recent, recipes },
+    data: {
+      favorites: (favRes.data ?? []).map((f) => mapFood(f as FoodRow)),
+      recent,
+      recipes,
+      dressings: (dressRes.data ?? []).map((f) => mapFood(f as FoodRow)),
+    },
   };
 }
 
@@ -234,6 +251,9 @@ export async function seedDefaultFoods(): Promise<ActionResult<{ inserted: numbe
     unit_grams: f.unitGrams ?? null,
     state: f.state ?? null,
     is_favorite: f.favorite ?? false,
+    is_mix: f.isMix ?? false,
+    is_dressing: f.isDressing ?? false,
+    default_qty: f.defaultQty ?? null,
   }));
   if (rows.length === 0) return { ok: true, data: { inserted: 0 } };
 

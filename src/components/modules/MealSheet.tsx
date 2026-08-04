@@ -3,13 +3,14 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { ArrowLeft, Camera, Minus, Plus, Search, Star, Trash2, X } from "lucide-react";
+import { ArrowLeft, BookmarkPlus, Camera, Minus, Plus, Search, Star, Trash2, X } from "lucide-react";
 import { useUIStore } from "@/lib/store";
 import { Sheet } from "@/components/shell/Sheet";
 import {
   getFoodPickerData,
   logMeal,
   logRecipe,
+  saveRecipe,
   searchFoods,
   toggleFoodFavorite,
   type FoodHit,
@@ -67,6 +68,7 @@ export function MealSheet({ proteinToday = 0, proteinGoal = 0 }: { proteinToday?
   const [uploading, setUploading] = useState(false);
   const [pendingFood, setPendingFood] = useState<FoodHit | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [recipeName, setRecipeName] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -78,6 +80,7 @@ export function MealSheet({ proteinToday = 0, proteinGoal = 0 }: { proteinToday?
     setPhoto(null);
     setPendingFood(null);
     setEditingIndex(null);
+    setRecipeName(null);
     getFoodPickerData().then((r) => r.ok && setPicker(r.data));
   }, [open]);
 
@@ -169,6 +172,26 @@ export function MealSheet({ proteinToday = 0, proteinGoal = 0 }: { proteinToday?
     });
   }
 
+  /** Guarda lo que ya se armó como receta reutilizable. */
+  function storeRecipe() {
+    const name = (recipeName ?? "").trim();
+    if (!name) return;
+    setError(null);
+    startTransition(async () => {
+      const res = await saveRecipe({
+        name,
+        items: items.map((d) => ({ foodId: d.food.id, quantity: d.grams })),
+      });
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      setRecipeName(null);
+      const fresh = await getFoodPickerData();
+      if (fresh.ok) setPicker(fresh.data);
+    });
+  }
+
   function useRecipe(recipeId: string) {
     setError(null);
     startTransition(async () => {
@@ -189,8 +212,10 @@ export function MealSheet({ proteinToday = 0, proteinGoal = 0 }: { proteinToday?
       <Sheet open={open} onClose={closeSheet} title="" className="meal-sheet qty-sheet">
         <QuantityStep
           food={pendingFood}
+          dressings={picker?.dressings ?? []}
           initialUnits={current?.units ?? null}
           initialGrams={current?.grams ?? null}
+          onAddDressing={(f, grams) => setItems((it) => [...it, { food: f, grams, units: null }])}
           onBack={() => {
             setPendingFood(null);
             setEditingIndex(null);
@@ -272,6 +297,26 @@ export function MealSheet({ proteinToday = 0, proteinGoal = 0 }: { proteinToday?
               P {nf(totals.protein, 1)} · C {nf(totals.carbs, 1)} · G {nf(totals.fat, 1)}
             </span>
           </div>
+
+          {recipeName == null ? (
+            <button className="linkish save-rec" onClick={() => setRecipeName("")}>
+              <BookmarkPlus size={14} /> Guardar como receta
+            </button>
+          ) : (
+            <div className="supps-add rec-form">
+              <input
+                value={recipeName}
+                onChange={(e) => setRecipeName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && storeRecipe()}
+                placeholder="Ej. Ensalada habitual"
+                aria-label="Nombre de la receta"
+                autoFocus
+              />
+              <button className="add" onClick={storeRecipe} disabled={pending || !recipeName.trim()}>
+                Guardar
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -431,21 +476,27 @@ function FoodRow({
 /** Paso de cantidad: se elige en la unidad natural del alimento. */
 function QuantityStep({
   food,
+  dressings,
   initialUnits,
   initialGrams,
   onBack,
   onConfirm,
+  onAddDressing,
 }: {
   food: FoodHit;
+  dressings: FoodHit[];
   initialUnits: number | null;
   initialGrams: number | null;
   onBack: () => void;
   onConfirm: (grams: number, units: number | null) => void;
+  onAddDressing: (food: FoodHit, grams: number) => void;
 }) {
+  // El aderezo se suma como ítem propio: puede pesar más que toda la ensalada.
+  const [added, setAdded] = useState<string[]>([]);
   const hasUnit = !!food.unitLabel && !!food.unitGrams;
   const [mode, setMode] = useState<"unit" | "gram">(hasUnit && initialGrams == null ? "unit" : initialUnits != null ? "unit" : hasUnit ? "unit" : "gram");
   const [units, setUnits] = useState(initialUnits ?? 1);
-  const [grams, setGrams] = useState(initialGrams ?? 100);
+  const [grams, setGrams] = useState(initialGrams ?? food.defaultQty ?? 100);
 
   const total = mode === "unit" && hasUnit ? units * (food.unitGrams ?? 0) : grams;
   const m = macrosOf(food, total);
@@ -537,6 +588,34 @@ function QuantityStep({
           <b>{nf(m.fat, 1)} g</b>
         </div>
       </div>
+
+      {food.isMix && dressings.length > 0 && (
+        <div className="qty-dress">
+          <span className="eyebrow">¿Le pusiste aderezo?</span>
+          <p className="note" style={{ margin: "4px 0 10px" }}>
+            Va como ítem aparte: una cucharada de aceite puede sumar más que toda la ensalada.
+          </p>
+          <div className="chip-row" style={{ marginBottom: 0 }}>
+            {dressings.map((dr) => {
+              const q = dr.defaultQty ?? dr.unitGrams ?? 15;
+              const on = added.includes(dr.id);
+              return (
+                <button
+                  key={dr.id}
+                  className={`chip${on ? " on" : ""}`}
+                  disabled={on}
+                  onClick={() => {
+                    onAddDressing(dr, q);
+                    setAdded((a) => [...a, dr.id]);
+                  }}
+                >
+                  {on ? "✓" : "+"} {dr.name} · {nf((dr.kcal * q) / 100)} kcal
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <button className="ci-save" onClick={() => onConfirm(total, mode === "unit" && hasUnit ? units : null)}>
         {initialGrams != null ? "Actualizar" : "Agregar"}

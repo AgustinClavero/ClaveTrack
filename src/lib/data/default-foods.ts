@@ -43,6 +43,12 @@ export interface DefaultFood {
   unitGrams?: number;
   state?: "crudo" | "cocido";
   favorite?: boolean;
+  /** Mezcla estimada (ensaladas): se carga por peso total del plato. */
+  isMix?: boolean;
+  /** Se ofrece como aderezo rápido al cargar una mezcla. */
+  isDressing?: boolean;
+  /** Cantidad sugerida al elegirlo (g o ml). */
+  defaultQty?: number;
 }
 
 export const DEFAULT_FOODS: DefaultFood[] = [
@@ -107,6 +113,13 @@ export const DEFAULT_FOODS: DefaultFood[] = [
   { name: "Rúcula", category: "verduras", base: "100g", kcal: 25, protein: 2.6, carbs: 3.7, fat: 0.7, fiber: 1.6 },
   { name: "Apio", category: "verduras", base: "100g", kcal: 16, protein: 0.7, carbs: 3, fat: 0.2, fiber: 1.6 },
   { name: "Champiñones", category: "verduras", base: "100g", kcal: 22, protein: 3.1, carbs: 3.3, fat: 0.3, fiber: 1 },
+  { name: "Choclo", category: "verduras", base: "100g", kcal: 96, protein: 3.4, carbs: 21, fat: 1.5, fiber: 2.4 },
+
+  // Mezclas: para cuando no se pesa ingrediente por ingrediente.
+  // Nunca incluyen aderezo: eso se suma aparte porque cambia todo el total.
+  { name: "Ensalada mixta (sin aderezo)", category: "verduras", base: "100g", kcal: 30, protein: 1.3, carbs: 6, fat: 0.3, fiber: 1.8, isMix: true, defaultQty: 200, favorite: true },
+  { name: "Verduras cocidas (sin aderezo)", category: "verduras", base: "100g", kcal: 45, protein: 2, carbs: 9, fat: 0.5, fiber: 2.5, isMix: true, defaultQty: 200 },
+  { name: "Mix de vegetales cocidos con choclo", category: "verduras", base: "100g", kcal: 48, protein: 2, carbs: 10, fat: 0.5, fiber: 2.5, isMix: true, defaultQty: 250, favorite: true },
 
   // ---------- 🍎 Frutas ----------
   { name: "Banana", category: "frutas", base: "100g", kcal: 89, protein: 1.1, carbs: 23, fat: 0.3, fiber: 2.6, unitLabel: "unidad", unitGrams: 120, favorite: true },
@@ -126,7 +139,9 @@ export const DEFAULT_FOODS: DefaultFood[] = [
 
   // ---------- 🥜 Grasas saludables ----------
   { name: "Palta", category: "grasas", base: "100g", kcal: 160, protein: 2, carbs: 8.5, fat: 14.7, fiber: 6.7, unitLabel: "unidad", unitGrams: 150, favorite: true },
-  { name: "Aceite de oliva", category: "grasas", base: "100ml", kcal: 884, protein: 0, carbs: 0, fat: 100, unitLabel: "cda", unitGrams: 10, favorite: true },
+  { name: "Aceite de oliva", category: "grasas", base: "100ml", kcal: 884, protein: 0, carbs: 0, fat: 100, unitLabel: "cda", unitGrams: 10, favorite: true, isDressing: true, defaultQty: 10 },
+  { name: "Mayonesa", category: "grasas", base: "100g", kcal: 680, protein: 1, carbs: 1.5, fat: 75, unitLabel: "cda", unitGrams: 15, isDressing: true, defaultQty: 15 },
+  { name: "Mayonesa light", category: "grasas", base: "100g", kcal: 260, protein: 1, carbs: 9, fat: 24, unitLabel: "cda", unitGrams: 15, isDressing: true, defaultQty: 15 },
   { name: "Almendras", category: "grasas", base: "100g", kcal: 579, protein: 21, carbs: 22, fat: 50, fiber: 12.5, unitLabel: "puñado", unitGrams: 25 },
   { name: "Nueces", category: "grasas", base: "100g", kcal: 654, protein: 15, carbs: 14, fat: 65, fiber: 6.7, unitLabel: "puñado", unitGrams: 25 },
   { name: "Maní", category: "grasas", base: "100g", kcal: 567, protein: 25.8, carbs: 16, fat: 49, fiber: 8.5, unitLabel: "puñado", unitGrams: 25 },
@@ -160,9 +175,9 @@ export const DEFAULT_FOODS: DefaultFood[] = [
   { name: "Tomillo", category: "condimentos", base: "100g", kcal: 0, protein: 0, carbs: 0, fat: 0 },
   { name: "Curry", category: "condimentos", base: "100g", kcal: 0, protein: 0, carbs: 0, fat: 0 },
   { name: "Comino", category: "condimentos", base: "100g", kcal: 0, protein: 0, carbs: 0, fat: 0 },
-  { name: "Mostaza", category: "condimentos", base: "100g", kcal: 66, protein: 4, carbs: 6, fat: 3, unitLabel: "cda", unitGrams: 15 },
-  { name: "Vinagre", category: "condimentos", base: "100ml", kcal: 18, protein: 0, carbs: 0.6, fat: 0, unitLabel: "cda", unitGrams: 15 },
-  { name: "Limón", category: "condimentos", base: "100g", kcal: 29, protein: 1.1, carbs: 9, fat: 0.3, unitLabel: "unidad", unitGrams: 60 },
+  { name: "Mostaza", category: "condimentos", base: "100g", kcal: 66, protein: 4, carbs: 6, fat: 3, unitLabel: "cda", unitGrams: 15, isDressing: true, defaultQty: 15 },
+  { name: "Vinagre", category: "condimentos", base: "100ml", kcal: 18, protein: 0, carbs: 0.6, fat: 0, unitLabel: "cda", unitGrams: 15, isDressing: true, defaultQty: 15 },
+  { name: "Limón", category: "condimentos", base: "100g", kcal: 29, protein: 1.1, carbs: 9, fat: 0.3, unitLabel: "unidad", unitGrams: 60, isDressing: true, defaultQty: 15 },
 
   // ---------- 🍯 Otros ----------
   { name: "Gelatina light", category: "otros", base: "100g", kcal: 8, protein: 1.2, carbs: 0.6, fat: 0, unitLabel: "pote", unitGrams: 120 },
