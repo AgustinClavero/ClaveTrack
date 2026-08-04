@@ -1,26 +1,65 @@
-import type { AreaScores, ScoreWeights } from "@/types";
+// ============================================================
+// Motor de cumplimiento de ClaveTrack.
+// Cada área aporta un puntaje 0..100 y un flag hasData.
+// El total renormaliza los pesos sobre las áreas con datos:
+// nunca penaliza por un área que el usuario no usa o que aún no tiene datos.
+// ============================================================
 
-/** Ponderaciones iniciales (editables por el usuario). Suman 1. */
-export const DEFAULT_WEIGHTS: ScoreWeights = {
-  nutrition: 0.3,
-  tasks: 0.25,
-  activity: 0.15,
-  study: 0.1,
-  habits: 0.1,
-  sleep: 0.1,
+export type AreaKey = "nutrition" | "activity" | "focus" | "study" | "habits" | "rest";
+
+export const AREA_LABELS: Record<AreaKey, string> = {
+  nutrition: "Nutrición",
+  activity: "Actividad",
+  focus: "Foco",
+  study: "Estudio",
+  habits: "Hábitos",
+  rest: "Descanso",
 };
 
-/** Umbral de racha por defecto (%). */
+/** Pesos iniciales (editables por el usuario). No hace falta que sumen 100: se normalizan. */
+export const DEFAULT_WEIGHTS: Record<AreaKey, number> = {
+  nutrition: 30,
+  focus: 25,
+  activity: 15,
+  study: 10,
+  habits: 10,
+  rest: 10,
+};
+
 export const DEFAULT_STREAK_THRESHOLD = 75;
 
-/**
- * Cumplimiento total = Σ (puntuación_área × ponderación_área).
- * Cada puntuación va de 0 a 100; el resultado también.
- */
-export function dailyScore(scores: AreaScores, weights: ScoreWeights = DEFAULT_WEIGHTS): number {
-  const keys = Object.keys(weights) as (keyof ScoreWeights)[];
-  const total = keys.reduce((acc, k) => acc + clamp(scores[k]) * weights[k], 0);
-  return Math.round(total);
+export interface AreaResult {
+  value: number; // 0..100
+  hasData: boolean;
+}
+
+export interface DayScore {
+  total: number; // 0..100
+  breakdown: Record<AreaKey, number>; // -1 = sin datos
+  activeAreas: AreaKey[];
+}
+
+const clamp = (n: number) => Math.max(0, Math.min(100, n));
+
+/** Cumplimiento del día: Σ (score_área × peso_normalizado) sobre áreas con datos. */
+export function computeDay(
+  areas: Partial<Record<AreaKey, AreaResult>>,
+  weights: Record<AreaKey, number> = DEFAULT_WEIGHTS
+): DayScore {
+  const keys = Object.keys(weights) as AreaKey[];
+  const active = keys.filter((k) => areas[k]?.hasData);
+  const totalW = active.reduce((s, k) => s + weights[k], 0) || 1;
+
+  const total = Math.round(
+    active.reduce((s, k) => s + clamp(areas[k]!.value) * (weights[k] / totalW), 0)
+  );
+
+  const breakdown = {} as Record<AreaKey, number>;
+  keys.forEach((k) => {
+    breakdown[k] = areas[k]?.hasData ? Math.round(clamp(areas[k]!.value)) : -1;
+  });
+
+  return { total, breakdown, activeAreas: active };
 }
 
 export type ScoreLabel = "Excelente" | "Buen día" | "Aceptable" | "Revisar";
@@ -36,6 +75,16 @@ export function meetsStreak(score: number, threshold = DEFAULT_STREAK_THRESHOLD)
   return score >= threshold;
 }
 
-function clamp(n: number) {
-  return Math.max(0, Math.min(100, n));
+// ---------- Gamificación (provisional hasta materializar daily_scores) ----------
+const XP_PER_LEVEL = 500;
+
+/** XP acumulado aproximado a partir de la racha (placeholder hasta tener histórico). */
+export function estimateXp(streak: number, todayScore: number): number {
+  return streak * 100 + Math.round(todayScore);
+}
+
+export function levelFromXp(xp: number) {
+  const level = Math.floor(xp / XP_PER_LEVEL) + 1;
+  const inLevel = xp % XP_PER_LEVEL;
+  return { level, inLevel, per: XP_PER_LEVEL };
 }

@@ -66,7 +66,7 @@ body {
 
 /* ---------- App frame ---------- */
 .app {
-  max-width: 1180px;
+  max-width: none;
   margin: 0 auto;
   display: flex;
   min-height: 100vh;
@@ -935,7 +935,8 @@ svg.line {
   }
   .screen {
     padding: 22px 30px 30px;
-    max-width: 940px;
+    max-width: 980px;
+    margin: 0 auto;
   }
   .cols {
     display: grid;
@@ -1406,4 +1407,470 @@ svg.line {
   display: grid;
   place-items: center;
   padding: 0;
+}
+
+/* ============================================================
+   DASHBOARD v2 (Hoy)
+   Espaciado generoso · desktop full width
+   ============================================================ */
+.dash {
+  padding: 16px 18px;
+}
+.dash .greet {
+  margin: 8px 4px 6px;
+}
+.dash .greet h1 {
+  font-size: 23px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+.dash .greet p {
+  font-size: 13.5px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+/* calendario con anillos */
+.cal7 {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 18px 2px 10px;
+}
+.cal7::-webkit-scrollbar {
+  display: none;
+}
+.cday {
+  flex: 1;
+  min-width: 46px;
+  text-align: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.cday .cdn {
+  font-size: 11.5px;
+  color: var(--muted);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.cday .cdr {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  margin: 0 auto;
+}
+.cday .cdr .cdnum {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 14px;
+}
+.cday.today .cdr::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+}
+
+/* hero */
+.d-hero {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+.d-hero .hm .badge {
+  display: inline-block;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: var(--r-pill);
+  margin-bottom: 9px;
+}
+.d-hero .hm .lab {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+.d-hero .hm .big {
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.d-hero .hm .foc {
+  margin-top: 11px;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+.d-hero .hm .foc b {
+  color: var(--text);
+}
+
+/* nivel */
+.lvl {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.lvl .lv {
+  font-weight: 800;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.lvl .bar {
+  flex: 1;
+  height: 8px;
+  border-radius: 20px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.lvl .bar > i {
+  display: block;
+  height: 100%;
+  background: var(--ink);
+  border-radius: 20px;
+}
+.lvl .xp {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* áreas */
+.astrip-t {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 4px 4px 0;
+}
+.astrip {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 6px 2px;
+}
+.astrip::-webkit-scrollbar {
+  display: none;
+}
+.acard {
+  flex: 0 0 auto;
+  width: 92px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 14px 8px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+.acard.soon {
+  opacity: 0.5;
+}
+.acard .an {
+  font-size: 11.5px;
+  color: var(--muted);
+  font-weight: 600;
+  margin-top: 9px;
+}
+.acard .ar {
+  width: 54px;
+  height: 54px;
+  margin: 0 auto;
+  position: relative;
+}
+.acard .ar .num {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+/* carrusel */
+.dcar-h {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 6px 4px 0;
+}
+.dcar-h .t {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.dcar {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  padding: 6px 2px;
+  margin: 0 -2px;
+}
+.dcar::-webkit-scrollbar {
+  display: none;
+}
+.dcard {
+  flex: 0 0 88%;
+  scroll-snap-align: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  padding: 22px;
+  box-shadow: var(--shadow);
+}
+.dcard h3 {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin-bottom: 18px;
+  font-weight: 700;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.ddots {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 14px;
+}
+.ddots i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--line);
+  transition: 0.2s;
+}
+.ddots i.on {
+  background: var(--ink);
+  width: 20px;
+  border-radius: 20px;
+}
+
+/* card nutrición */
+.dc-cal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.dc-mrow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.dc-mcell {
+  text-align: center;
+}
+.dc-mcell .mr {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 7px;
+  position: relative;
+}
+.dc-mcell .mr .ic {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 17px;
+}
+.dc-mcell .mv {
+  font-size: 14px;
+  font-weight: 800;
+}
+.dc-mcell .mv small {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.dc-mcell .ml2 {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* filas de hábito clave */
+.khrow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--line);
+}
+.khrow:last-child {
+  border-bottom: none;
+}
+.khrow .kr {
+  width: 44px;
+  height: 44px;
+  position: relative;
+  flex-shrink: 0;
+}
+.khrow .kr .ic {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+}
+.khrow .kn {
+  flex: 1;
+}
+.khrow .kn .n {
+  font-weight: 700;
+  font-size: 14.5px;
+}
+.khrow .kn .s {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.khrow .kv {
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.empty-mini {
+  text-align: center;
+  color: var(--muted);
+  font-size: 13.5px;
+  padding: 8px 0;
+}
+
+/* desktop: full width + grid */
+@media (min-width: 1024px) {
+  .dash {
+    padding: 28px 40px;
+  }
+  .dash-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 24px;
+    align-items: start;
+  }
+  .dash-col {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .dcar {
+    overflow: visible;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .dcard {
+    flex: none;
+  }
+  .ddots {
+    display: none;
+  }
+  .astrip {
+    flex-wrap: wrap;
+  }
+  .acard {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .dash .greet h1 {
+    font-size: 28px;
+  }
+}
+@media (min-width: 1500px) {
+  .dcar {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+
+/* check-in sheet */
+.sheet.checkin {
+  max-width: 560px;
+}
+.sheet .sub {
+  font-size: 13.5px;
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+.ci-field {
+  margin-bottom: 20px;
+}
+.ci-field .lab {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13.5px;
+  font-weight: 700;
+  margin-bottom: 9px;
+}
+.ci-field .lab .val {
+  color: var(--muted);
+}
+.ci-input {
+  width: 100%;
+  border: 1.5px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 14px;
+  padding: 13px 15px;
+  font-size: 15px;
+  outline: none;
+}
+.ci-input:focus {
+  border-color: var(--ink);
+}
+.checkin input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  border-radius: 20px;
+  background: var(--surface-2);
+  outline: none;
+}
+.checkin input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--ink);
+  cursor: pointer;
+  box-shadow: var(--shadow);
+}
+.checkin input[type="range"]::-moz-range-thumb {
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 50%;
+  background: var(--ink);
+  cursor: pointer;
+}
+.ci-save {
+  width: 100%;
+  background: var(--ink);
+  color: var(--ink-contrast);
+  border: none;
+  border-radius: 16px;
+  padding: 15px;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  margin-top: 4px;
 }
