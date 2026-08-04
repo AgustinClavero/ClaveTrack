@@ -3593,3 +3593,40 @@ svg.line {
   color: var(--text-2);
   font-weight: 600;
 }
+
+/* Header movil: con targets de 44px los 3 botones ya no entraban en 360px. */
+.head {
+  padding: var(--sp-4) var(--sp-4) var(--sp-2);
+  gap: var(--sp-2);
+}
+.head .hb {
+  min-width: 0;
+}
+.head .hb b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.head-right {
+  gap: var(--sp-1);
+  flex: 0 0 auto;
+}
+.streak-pill {
+  flex: 0 0 auto;
+}
+@media (max-width: 400px) {
+  .head .hb b {
+    display: none;
+  }
+}
+
+/* En el detalle de comida la foto va a sangre: el header movil estorba. */
+@media (max-width: 767px) {
+  .main:has(.meal-detail) .head {
+    display: none;
+  }
+  .meal-detail .md-banner {
+    height: 42vh;
+    min-height: 240px;
+  }
+}
