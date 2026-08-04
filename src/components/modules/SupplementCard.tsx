@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Check, Pill, Settings } from "lucide-react";
+import { Check, Settings } from "lucide-react";
 import { toggleHabit } from "@/app/actions";
 import { Ring } from "@/components/ui/Ring";
 import type { Habit } from "@/types";
@@ -35,8 +35,8 @@ export function SupplementCard({ items }: { items: Habit[] }) {
     return (
       <div className="card supp-card empty">
         <div className="sup-head">
-          <span className="sup-icon" aria-hidden="true">
-            <Pill size={20} />
+          <span className="sup-emoji" aria-hidden="true">
+            💊
           </span>
           <div>
             <span className="eyebrow">Suplementos</span>
@@ -55,8 +55,8 @@ export function SupplementCard({ items }: { items: Habit[] }) {
   return (
     <div className="card supp-card">
       <div className="sup-head">
-        <Ring size={64} stroke={8} value={pct} color="var(--red)" track="var(--red-tint)" centerFontSize={20}>
-          <Pill size={20} strokeWidth={2.2} />
+        <Ring size={64} stroke={8} value={pct} color="var(--red)" track="var(--red-tint)" centerFontSize={22}>
+          💊
         </Ring>
         <div className="sup-id">
           <span className="eyebrow">Suplementos</span>

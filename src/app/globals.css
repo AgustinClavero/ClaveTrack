@@ -5132,3 +5132,40 @@ svg.line {
     grid-column: 1 / -1;
   }
 }
+
+/* Alta de suplementos: el boton no debe partir el texto en dos lineas. */
+.supps-add {
+  align-items: stretch;
+  gap: var(--sp-2);
+}
+.supps-add input {
+  min-height: 48px;
+  min-width: 0;
+}
+.supps-add .add {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 var(--sp-5);
+  border-radius: var(--r-pill);
+  white-space: nowrap;
+  font-size: var(--fs-sm);
+}
+.supps-add .add:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* Emoji de píldora en lugar del ícono cuadrado. */
+.sup-emoji {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  background: var(--red-tint);
+  border-radius: var(--r-pill);
+  font-size: 22px;
+}

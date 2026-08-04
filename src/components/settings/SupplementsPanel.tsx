@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Pill, Plus, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { upsertHabit, archiveHabit } from "@/app/actions";
 import type { Habit } from "@/types";
 
@@ -61,8 +61,8 @@ export function SupplementsPanel({ items }: { items: Habit[] }) {
               Los marcás cada día desde Nutrición. Cuentan para tu cumplimiento.
             </p>
           </div>
-          <span className="sup-icon" aria-hidden="true">
-            <Pill size={18} />
+          <span className="sup-emoji" aria-hidden="true">
+            💊
           </span>
         </div>
 
@@ -75,7 +75,6 @@ export function SupplementsPanel({ items }: { items: Habit[] }) {
             aria-label="Nombre del suplemento"
           />
           <button className="add" onClick={() => add(name)} disabled={pending || !name.trim()}>
-            <Plus size={16} />
             Agregar
           </button>
         </div>
