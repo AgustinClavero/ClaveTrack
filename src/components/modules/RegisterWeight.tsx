@@ -32,9 +32,10 @@ export function RegisterWeight({ date, current }: { date: string; current: numbe
       <input
         type="number"
         inputMode="decimal"
+        step="0.1"
         value={kg}
         onChange={(e) => setKg(e.target.value)}
-        placeholder="kg"
+        placeholder="kg (ej. 94,3)"
         autoFocus
         style={{
           flex: 1,

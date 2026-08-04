@@ -1177,6 +1177,22 @@ svg.line {
   color: var(--muted);
   font-weight: 600;
 }
+.sp-val-input {
+  font-size: inherit;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  background: none;
+  border: none;
+  border-bottom: 2px dashed var(--line);
+  outline: none;
+  width: 4.2ch;
+  padding: 0;
+  font-family: inherit;
+}
+.sp-val-input:focus {
+  border-bottom-color: var(--ink);
+}
 .sp-ctrls {
   display: flex;
   gap: 10px;

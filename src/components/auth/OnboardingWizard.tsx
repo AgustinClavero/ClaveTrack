@@ -15,6 +15,7 @@ function Stepper({
   min,
   decimals = 0,
   compact = false,
+  editable = false,
   onChange,
 }: {
   label: string;
@@ -24,22 +25,63 @@ function Stepper({
   min: number;
   decimals?: number;
   compact?: boolean;
+  editable?: boolean;
   onChange: (v: number) => void;
 }) {
   const round = (n: number) => Math.round(n * 100) / 100;
+  const [text, setText] = useState<string | null>(null);
+
+  function commit(raw: string) {
+    const v = parseFloat(raw.replace(",", "."));
+    if (!isNaN(v)) onChange(Math.max(min, round(v)));
+    setText(null);
+  }
+
   return (
     <div className={`stepper${compact ? " compact" : ""}`}>
       <div className="sp-info">
         <div className="sp-lbl">{label}</div>
-        <div className="sp-val">
-          {nf(value, decimals)} <small>{unit}</small>
-        </div>
+        {editable ? (
+          <div className="sp-val">
+            <input
+              className="sp-val-input"
+              type="text"
+              inputMode="decimal"
+              value={text ?? nf(value, decimals)}
+              onFocus={(e) => e.target.select()}
+              onChange={(e) => setText(e.target.value)}
+              onBlur={(e) => commit(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+              }}
+            />{" "}
+            <small>{unit}</small>
+          </div>
+        ) : (
+          <div className="sp-val">
+            {nf(value, decimals)} <small>{unit}</small>
+          </div>
+        )}
       </div>
       <div className="sp-ctrls">
-        <button className="sp-btn" onClick={() => onChange(Math.max(min, round(value - step)))} aria-label="Menos">
+        <button
+          className="sp-btn"
+          onClick={() => {
+            setText(null);
+            onChange(Math.max(min, round(value - step)));
+          }}
+          aria-label="Menos"
+        >
           <Minus size={18} strokeWidth={2.5} />
         </button>
-        <button className="sp-btn" onClick={() => onChange(round(value + step))} aria-label="Más">
+        <button
+          className="sp-btn"
+          onClick={() => {
+            setText(null);
+            onChange(round(value + step));
+          }}
+          aria-label="Más"
+        >
           <Plus size={18} strokeWidth={2.5} />
         </button>
       </div>
@@ -179,8 +221,8 @@ export function OnboardingWizard() {
               <h2>Tu peso</h2>
             </div>
             <p className="sub">¿Dónde estás hoy y a dónde querés llegar?</p>
-            <Stepper label="Peso actual" value={weight} unit="kg" step={1} min={30} onChange={setWeight} />
-            <Stepper label="Peso objetivo" value={target} unit="kg" step={1} min={30} onChange={setTarget} />
+            <Stepper label="Peso actual" value={weight} unit="kg" step={0.1} min={30} decimals={1} editable onChange={setWeight} />
+            <Stepper label="Peso objetivo" value={target} unit="kg" step={0.1} min={30} decimals={1} editable onChange={setTarget} />
             <p className="sub" style={{ marginTop: 16 }}>
               {target < weight
                 ? `A bajar ${nf(weight - target)} kg. ¡Vamos!`
