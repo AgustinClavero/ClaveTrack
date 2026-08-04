@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { materializeDayScore } from "@/lib/data/score";
 
 /** Marca/desmarca un hábito para una fecha. */
 export async function toggleHabit(habitId: string, date: string, done: boolean, value?: number) {
@@ -17,6 +18,8 @@ export async function toggleHabit(habitId: string, date: string, done: boolean, 
       { habit_id: habitId, user_id: user.id, log_date: date, done, value: value ?? null },
       { onConflict: "habit_id,log_date" }
     );
+
+  if (!error) await materializeDayScore(supabase, user.id, date);
 
   revalidatePath("/today");
   revalidatePath("/habits");
@@ -60,6 +63,9 @@ export async function saveCheckin(p: CheckinPayload) {
       .from("body_entries")
       .upsert({ user_id: user.id, log_date: p.date, weight_kg: p.weightKg }, { onConflict: "user_id,log_date" });
   }
+
+  // El check-in afecta el área Descanso (sleep_quality) → re-materializa el día.
+  if (!error) await materializeDayScore(supabase, user.id, p.date);
 
   revalidatePath("/today");
   revalidatePath("/progress");

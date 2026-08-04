@@ -75,12 +75,35 @@ export function meetsStreak(score: number, threshold = DEFAULT_STREAK_THRESHOLD)
   return score >= threshold;
 }
 
-// ---------- Gamificación (provisional hasta materializar daily_scores) ----------
+// ---------- Pesos por usuario (user_settings → AreaKey) ----------
+export interface SettingsWeightsRow {
+  w_nutrition?: number | null;
+  w_tasks?: number | null;
+  w_activity?: number | null;
+  w_study?: number | null;
+  w_habits?: number | null;
+  w_sleep?: number | null;
+}
+
+/** Mapea la fila de user_settings a pesos por área. Fallback a DEFAULT_WEIGHTS. */
+export function weightsFromSettings(row?: SettingsWeightsRow | null): Record<AreaKey, number> {
+  if (!row) return DEFAULT_WEIGHTS;
+  return {
+    nutrition: row.w_nutrition ?? DEFAULT_WEIGHTS.nutrition,
+    focus: row.w_tasks ?? DEFAULT_WEIGHTS.focus,
+    activity: row.w_activity ?? DEFAULT_WEIGHTS.activity,
+    study: row.w_study ?? DEFAULT_WEIGHTS.study,
+    habits: row.w_habits ?? DEFAULT_WEIGHTS.habits,
+    rest: row.w_sleep ?? DEFAULT_WEIGHTS.rest,
+  };
+}
+
+// ---------- Gamificación (XP real desde daily_scores) ----------
 const XP_PER_LEVEL = 500;
 
-/** XP acumulado aproximado a partir de la racha (placeholder hasta tener histórico). */
-export function estimateXp(streak: number, todayScore: number): number {
-  return streak * 100 + Math.round(todayScore);
+/** XP que otorga un día: 1 XP por punto de score. Solo acumula, nunca baja. */
+export function xpForScore(total: number): number {
+  return Math.round(clamp(total));
 }
 
 export function levelFromXp(xp: number) {

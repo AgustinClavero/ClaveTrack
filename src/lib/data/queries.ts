@@ -2,13 +2,16 @@ import { createClient } from "@/lib/supabase/server";
 import { dayTotals } from "@/lib/calculations/macros";
 import {
   computeDay,
-  estimateXp,
+  DEFAULT_STREAK_THRESHOLD,
   levelFromXp,
   scoreLabel,
+  weightsFromSettings,
+  xpForScore,
   type AreaKey,
   type AreaResult,
   type DayScore,
 } from "@/lib/calculations/scoring";
+import { upsertDayScore } from "@/lib/data/score";
 import { userToday, recentDays, DEFAULT_TZ, type DayCell } from "@/lib/date";
 import type { Habit, Meal, MealType, NutritionGoals, WeightPoint } from "@/types";
 
@@ -93,7 +96,7 @@ export async function getDashboard(): Promise<Dashboard | null> {
   const weekCells = recentDays(7, timezone);
   const weekStart = weekCells[0].date;
 
-  const [goalsRes, mealsRes, habitsRes, entriesRes, weightRes, logRes, weekEntriesRes, doneDatesRes] =
+  const [goalsRes, mealsRes, habitsRes, entriesRes, weightRes, logRes, settingsRes, scoresRes] =
     await Promise.all([
       supabase.from("nutrition_goals").select("*").eq("user_id", user.id).order("effective_from", { ascending: false }).limit(1),
       supabase.from("meals").select("*, meal_items(*)").eq("user_id", user.id).eq("log_date", date).order("created_at"),
@@ -101,8 +104,9 @@ export async function getDashboard(): Promise<Dashboard | null> {
       supabase.from("habit_entries").select("habit_id, done, value").eq("user_id", user.id).eq("log_date", date),
       supabase.from("body_entries").select("log_date, weight_kg").eq("user_id", user.id).not("weight_kg", "is", null).order("log_date"),
       supabase.from("daily_logs").select("*").eq("user_id", user.id).eq("log_date", date).maybeSingle(),
-      supabase.from("habit_entries").select("log_date, done").eq("user_id", user.id).gte("log_date", weekStart).lte("log_date", date),
-      supabase.from("habit_entries").select("log_date").eq("user_id", user.id).eq("done", true),
+      supabase.from("user_settings").select("*").eq("user_id", user.id).maybeSingle(),
+      // Histórico materializado: sirve para calendario, racha y XP total.
+      supabase.from("daily_scores").select("log_date, total, xp").eq("user_id", user.id).order("log_date", { ascending: false }).limit(730),
     ]);
 
   const goalRow = goalsRes.data?.[0];
@@ -188,23 +192,33 @@ export async function getDashboard(): Promise<Dashboard | null> {
     habits: { value: habits.length ? (doneCount / habits.length) * 100 : 0, hasData: habits.length > 0 },
     rest: { value: (log?.sleep_quality ?? 0) * 10, hasData: log?.sleep_quality != null },
   };
-  const score = computeDay(areas);
+  const weights = weightsFromSettings(settingsRes.data);
+  const score = computeDay(areas, weights);
   const label = scoreLabel(score.total);
+  const hasToday = score.activeAreas.length > 0;
 
-  // ---- Racha ----
-  const streak = computeStreak((doneDatesRes.data ?? []).map((r: any) => r.log_date), date);
-  const level = levelFromXp(estimateXp(streak, score.total));
+  // Materializa el día actual (auto-cura: cada carga deja daily_scores al día).
+  await upsertDayScore(supabase, user.id, date, score, weights);
 
-  // ---- Calendario (proxy por cumplimiento de hábitos por día; hoy usa el score real) ----
-  const perDayDone = new Map<string, number>();
-  (weekEntriesRes.data ?? []).forEach((e: any) => {
-    if (e.done) perDayDone.set(e.log_date, (perDayDone.get(e.log_date) ?? 0) + 1);
-  });
+  // ---- Histórico materializado (excluye la fila de hoy, que puede estar vieja) ----
+  const history = (scoresRes.data ?? []).filter((r: any) => r.log_date !== date);
+  const scoreByDate = new Map<string, number>();
+  history.forEach((r: any) => scoreByDate.set(r.log_date, r.total));
+  if (hasToday) scoreByDate.set(date, score.total);
+
+  // ---- Racha: días consecutivos con score >= umbral ----
+  const threshold = settingsRes.data?.streak_threshold ?? DEFAULT_STREAK_THRESHOLD;
+  const streak = computeStreak(scoreByDate, date, threshold);
+
+  // ---- Nivel: XP acumulado real (histórico + hoy recalculado) ----
+  const xpTotal =
+    history.reduce((s: number, r: any) => s + (r.xp ?? 0), 0) + (hasToday ? xpForScore(score.total) : 0);
+  const level = levelFromXp(xpTotal);
+
+  // ---- Calendario: score real por día desde daily_scores ----
   const calendar: CalendarDay[] = weekCells.map((c) => {
-    if (c.date === date) return { ...c, score: meals.length || habits.length ? score.total : null };
-    const done = perDayDone.get(c.date) ?? 0;
-    const s = habits.length ? Math.round((done / habits.length) * 100) : 0;
-    return { ...c, score: done > 0 ? s : null };
+    if (c.date === date) return { ...c, score: hasToday ? score.total : null };
+    return { ...c, score: scoreByDate.get(c.date) ?? null };
   });
 
   const checkin: Checkin = {
@@ -233,23 +247,32 @@ export async function getDashboard(): Promise<Dashboard | null> {
   };
 }
 
-/** Racha ligera para el encabezado. */
+/** Racha ligera para el encabezado (desde daily_scores materializado). */
 export async function getStreak(): Promise<number> {
   const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return 0;
-  const { data } = await supabase.from("habit_entries").select("log_date").eq("user_id", user.id).eq("done", true);
-  return computeStreak((data ?? []).map((r: any) => r.log_date), userToday());
+
+  const [settingsRes, scoresRes] = await Promise.all([
+    supabase.from("user_settings").select("streak_threshold").eq("user_id", user.id).maybeSingle(),
+    supabase.from("daily_scores").select("log_date, total").eq("user_id", user.id).order("log_date", { ascending: false }).limit(730),
+  ]);
+
+  const threshold = settingsRes.data?.streak_threshold ?? DEFAULT_STREAK_THRESHOLD;
+  const scoreByDate = new Map<string, number>();
+  (scoresRes.data ?? []).forEach((r: any) => scoreByDate.set(r.log_date, r.total));
+  return computeStreak(scoreByDate, userToday(), threshold);
 }
 
-function computeStreak(dates: string[], today: string): number {
-  const set = new Set(dates);
+/** Días consecutivos (terminando hoy o ayer) con score >= umbral. */
+function computeStreak(scoreByDate: Map<string, number>, today: string, threshold: number): number {
+  const meets = (iso: string) => (scoreByDate.get(iso) ?? -1) >= threshold;
   let streak = 0;
   const d = new Date(today + "T00:00:00Z");
-  if (!set.has(today)) d.setUTCDate(d.getUTCDate() - 1);
-  while (set.has(d.toISOString().slice(0, 10))) {
+  if (!meets(today)) d.setUTCDate(d.getUTCDate() - 1);
+  while (meets(d.toISOString().slice(0, 10))) {
     streak++;
     d.setUTCDate(d.getUTCDate() - 1);
   }
