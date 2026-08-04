@@ -40,26 +40,26 @@ export default async function NutritionPage() {
       </header>
 
       <div className="nut-grid">
-        {/* Calorías: número protagonista + anillo */}
-        <div className="card cal-hero">
-          <div>
-            <div className="cal-num">
-              {nf(totals.kcal)}
-              <small>/{nf(goals.kcal)}</small>
+        {/* Calorías y macros en la misma página: las tres quedan a la misma altura */}
+        <SwipeDeck labels={["Calorías", "Suplementos", "Hábitos"]}>
+          <div className="nutri-block">
+            <div className="card cal-hero">
+              <div>
+                <div className="cal-num">
+                  {nf(totals.kcal)}
+                  <small>/{nf(goals.kcal)}</small>
+                </div>
+                <div className="cal-lbl">Calorías · faltan {nf(remaining)}</div>
+              </div>
+              <Ring size={80} stroke={9} value={goals.kcal ? totals.kcal / goals.kcal : 0} color="var(--amber)" track="var(--amber-tint)" centerFontSize={24}>
+                🔥
+              </Ring>
             </div>
-            <div className="cal-lbl">Calorías · faltan {nf(remaining)}</div>
-          </div>
-          <Ring size={92} stroke={10} value={goals.kcal ? totals.kcal / goals.kcal : 0} color="var(--ink)" centerFontSize={26}>
-            🔥
-          </Ring>
-        </div>
-
-        {/* Macros, suplementos y hábitos: deslizables en móvil, en grid en desktop */}
-        <SwipeDeck labels={["Macros", "Suplementos", "Hábitos"]}>
-          <div className="macro-cards">
-            <MacroCard label="Proteína" value={totals.protein} goal={goals.protein} emoji="🍗" color="var(--red)" tint="var(--red-tint)" />
-            <MacroCard label="Carbos" value={totals.carbs} goal={goals.carbs} emoji="🍜" color="var(--amber)" tint="var(--amber-tint)" />
-            <MacroCard label="Grasa" value={totals.fat} goal={goals.fat} emoji="🥑" color="var(--blue)" tint="var(--blue-tint)" />
+            <div className="macro-cards">
+              <MacroCard label="Proteína" value={totals.protein} goal={goals.protein} emoji="🍗" color="var(--red)" tint="var(--red-tint)" />
+              <MacroCard label="Carbos" value={totals.carbs} goal={goals.carbs} emoji="🍜" color="var(--amber)" tint="var(--amber-tint)" />
+              <MacroCard label="Grasa" value={totals.fat} goal={goals.fat} emoji="🥑" color="var(--blue)" tint="var(--blue-tint)" />
+            </div>
           </div>
 
           <SupplementCard items={supplements} />

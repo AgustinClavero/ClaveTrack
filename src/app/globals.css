@@ -5671,3 +5671,26 @@ svg.line {
     display: none;
   }
 }
+
+/* Dentro del deck: calorías + macros forman una sola página. */
+.deck-page .nutri-block {
+  height: 100%;
+  gap: var(--sp-3);
+}
+.deck-page .nutri-block .cal-hero {
+  flex: 0 0 auto;
+}
+.deck-page .nutri-block .macro-cards {
+  flex: 1;
+}
+.deck-page .macro-card {
+  padding: var(--sp-3) var(--sp-2);
+  gap: var(--sp-2);
+}
+
+@media (min-width: 768px) {
+  /* La página de calorías necesita algo más de aire que las otras dos. */
+  .deck-track {
+    grid-template-columns: 1.15fr 0.925fr 0.925fr;
+  }
+}
