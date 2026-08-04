@@ -8,6 +8,8 @@ import { AreaStrip } from "@/components/modules/AreaStrip";
 import { MacroCard } from "@/components/modules/MacroCard";
 import { AddMealButton } from "@/components/modules/AddMealButton";
 import { FocusEditor } from "@/components/modules/FocusEditor";
+import { InsightList } from "@/components/modules/InsightList";
+import { dayInsights } from "@/lib/calculations/insights";
 
 export const dynamic = "force-dynamic";
 
@@ -35,9 +37,31 @@ export default async function TodayPage() {
 
   const { goals, totals, score, label, level, keyHabits, calendar, checkin, habits, meals } = d;
   const nPct = score.breakdown.nutrition;
-  const pendingHabits = habits.filter((h) => !h.done).length;
+  const pending = habits.filter((h) => !h.done);
+  const pendingHabits = pending.length;
   const hasData = score.activeAreas.length > 0;
   const levelPct = Math.round((level.inLevel / level.per) * 100);
+
+  // El agua vive en el hábito si el usuario lo tiene; si no, en daily_logs.
+  const waterHabit = habits.find((h) => h.unit.toLowerCase() === "l" && /agua/i.test(h.name));
+  const waterMl = waterHabit ? waterHabit.value * 1000 : checkin.waterMl;
+  const waterGoalMl = waterHabit?.target ? waterHabit.target * 1000 : goals.waterMl;
+
+  const insights = dayInsights({
+    score: score.total,
+    breakdown: score.breakdown,
+    kcal: totals.kcal,
+    kcalGoal: goals.kcal,
+    protein: totals.protein,
+    proteinGoal: goals.protein,
+    mealsCount: meals.length,
+    pendingHabits: pending.map((h) => ({ name: h.name, emoji: h.emoji })),
+    waterMl,
+    waterGoalMl,
+    checkinDone: checkin.done,
+    streak: d.streak,
+    hour: new Date().getHours(),
+  });
 
   return (
     <section className="dash">
@@ -120,6 +144,9 @@ export default async function TodayPage() {
             <MacroCard label="Grasa" value={totals.fat} goal={goals.fat} emoji="🥑" color="var(--blue)" tint="var(--blue-tint)" />
           </div>
         </div>
+
+        {/* Recomendaciones accionables */}
+        <InsightList items={insights} />
 
         {/* Áreas */}
         <AreaStrip breakdown={score.breakdown} />

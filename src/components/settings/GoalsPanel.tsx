@@ -159,19 +159,48 @@ export function GoalsPanel({
           ))}
         </div>
 
+        {/* Reparto calórico en vivo: se ve cómo mueven los macros al editarlos. */}
+        <div className="macro-split">
+          <i style={{ width: `${(num(f.proteinG) * 4 * 100) / (kcalFromMacros || 1)}%`, background: "var(--red)" }} />
+          <i style={{ width: `${(num(f.carbsG) * 4 * 100) / (kcalFromMacros || 1)}%`, background: "var(--amber)" }} />
+          <i style={{ width: `${(num(f.fatG) * 9 * 100) / (kcalFromMacros || 1)}%`, background: "var(--blue)" }} />
+        </div>
+        <div className="split-legend">
+          <span>
+            <span className="dotk" style={{ background: "var(--red)" }} />
+            🍗 Proteína {Math.round((num(f.proteinG) * 4 * 100) / (kcalFromMacros || 1))}%
+          </span>
+          <span>
+            <span className="dotk" style={{ background: "var(--amber)" }} />
+            🌾 Carbos {Math.round((num(f.carbsG) * 4 * 100) / (kcalFromMacros || 1))}%
+          </span>
+          <span>
+            <span className="dotk" style={{ background: "var(--blue)" }} />
+            🥑 Grasa {Math.round((num(f.fatG) * 9 * 100) / (kcalFromMacros || 1))}%
+          </span>
+        </div>
+
         <div className="form-grid">
           {(
             [
-              ["kcal", "Calorías"],
-              ["proteinG", "Proteína (g)"],
-              ["carbsG", "Carbos (g)"],
-              ["fatG", "Grasa (g)"],
-              ["waterMl", "Agua (ml)"],
+              ["kcal", "🔥 Calorías", "kcal"],
+              ["proteinG", "🍗 Proteína", "g"],
+              ["carbsG", "🌾 Carbos", "g"],
+              ["fatG", "🥑 Grasa", "g"],
+              ["waterMl", "💧 Agua", "ml"],
             ] as const
-          ).map(([k, l]) => (
-            <label key={k} className="field">
+          ).map(([k, l, u]) => (
+            <label key={k} className="field field-unit">
               <span>{l}</span>
-              <input className="ci-input" inputMode="decimal" value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} />
+              <span className="input-wrap">
+                <input className="ci-input" inputMode="decimal" value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} />
+                <small>{u}</small>
+              </span>
+              {k !== "waterMl" && k !== "kcal" && (
+                <small className="per-kg">
+                  {lastWeightKg ? `${(num(f[k]) / lastWeightKg).toFixed(1)} g/kg de peso` : ""}
+                </small>
+              )}
             </label>
           ))}
         </div>

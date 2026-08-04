@@ -16,6 +16,7 @@ import {
   xpForScore,
   type DayScore,
 } from "@/lib/calculations/scoring";
+import { computeAchievements, type Achievement } from "@/lib/calculations/insights";
 import { dayWindow, recentDays, type DayCell } from "@/lib/date";
 import type { Habit, Meal, MealType, NutritionGoals, WeightPoint } from "@/types";
 
@@ -483,6 +484,31 @@ export interface Progress {
   weightTarget: number;
   streak: number;
   calendar: CalendarDay[];
+  achievements: Achievement[];
+  bestStreak: number;
+  daysLogged: number;
+  perfectDays: number;
+  avgScore: number | null;
+}
+
+/** Racha más larga del histórico (no solo la vigente). */
+function bestStreakOf(scoreByDate: Map<string, number>, threshold: number): number {
+  const dates = [...scoreByDate.keys()].sort();
+  let best = 0;
+  let run = 0;
+  let prev: string | null = null;
+  for (const d of dates) {
+    if ((scoreByDate.get(d) ?? -1) < threshold) {
+      run = 0;
+      prev = d;
+      continue;
+    }
+    const consecutive = prev != null && Math.round((Date.parse(d) - Date.parse(prev)) / 86400000) === 1;
+    run = consecutive ? run + 1 : 1;
+    best = Math.max(best, run);
+    prev = d;
+  }
+  return best;
 }
 
 export async function getProgress(): Promise<Progress | null> {
@@ -491,7 +517,7 @@ export async function getProgress(): Promise<Progress | null> {
   const supabase = getServerClient();
   const weekCells = recentDays(7, ctx.timezone);
 
-  const [weightRes, historyRes] = await Promise.all([
+  const [weightRes, historyRes, mealsCountRes] = await Promise.all([
     supabase
       .from("body_entries")
       .select("log_date, weight_kg")
@@ -500,6 +526,7 @@ export async function getProgress(): Promise<Progress | null> {
       .order("log_date", { ascending: false })
       .limit(400),
     getScoreHistory(ctx),
+    supabase.from("meals").select("id", { count: "exact", head: true }).eq("user_id", ctx.userId),
   ]);
 
   const weight: WeightPoint[] = (weightRes.data ?? [])
@@ -511,6 +538,20 @@ export async function getProgress(): Promise<Progress | null> {
   const streak = computeStreak(scoreByDate, ctx.today, ctx.streakThreshold);
   const calendar: CalendarDay[] = weekCells.map((c) => ({ ...c, score: scoreByDate.get(c.date) ?? null }));
 
+  const totals = [...scoreByDate.values()];
+  const perfectDays = totals.filter((t) => t >= 100).length;
+  const avgScore = totals.length ? Math.round(totals.reduce((a, b) => a + b, 0) / totals.length) : null;
+  const bestStreak = Math.max(streak, bestStreakOf(scoreByDate, ctx.streakThreshold));
+
+  const achievements = computeAchievements({
+    streak,
+    bestStreak,
+    daysLogged: scoreByDate.size,
+    totalMeals: mealsCountRes.count ?? 0,
+    perfectDays,
+    weightLogged: weight.length,
+  });
+
   const weightTarget =
     ctx.profile?.target_weight_kg != null
       ? Number(ctx.profile.target_weight_kg)
@@ -518,7 +559,18 @@ export async function getProgress(): Promise<Progress | null> {
         ? weight[weight.length - 1].kg
         : 80;
 
-  return { date: ctx.today, weight, weightTarget, streak, calendar };
+  return {
+    date: ctx.today,
+    weight,
+    weightTarget,
+    streak,
+    calendar,
+    achievements,
+    bestStreak,
+    daysLogged: scoreByDate.size,
+    perfectDays,
+    avgScore,
+  };
 }
 
 // ============================================================

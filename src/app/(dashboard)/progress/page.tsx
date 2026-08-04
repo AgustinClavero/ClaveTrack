@@ -3,7 +3,10 @@ import { getProgress } from "@/lib/data/queries";
 import { nf } from "@/lib/utils";
 import { WeightChart } from "@/components/modules/WeightChart";
 import { AddWeightButton } from "@/components/modules/AddWeightButton";
+import { AchievementGrid } from "@/components/modules/AchievementGrid";
+import { MilestoneTrack } from "@/components/modules/MilestoneTrack";
 import { Ring } from "@/components/ui/Ring";
+import { weightMilestones, weightPace } from "@/lib/calculations/insights";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +14,7 @@ export default async function ProgressPage() {
   const d = await getProgress();
   if (!d) redirect("/login");
 
-  const { weight, weightTarget, streak, calendar } = d;
+  const { weight, weightTarget, streak, calendar, achievements } = d;
   const current = weight.length ? weight[weight.length - 1].kg : 0;
   const start = weight.length ? weight[0].kg : 0;
   const pct =
@@ -19,6 +22,9 @@ export default async function ProgressPage() {
       ? Math.max(0, Math.min(100, Math.round(((start - current) / (start - weightTarget)) * 100)))
       : 0;
   const delta = weight.length >= 2 ? current - start : 0;
+
+  const milestones = weightMilestones(start, current, weightTarget);
+  const pace = weightPace(weight, weightTarget);
 
   return (
     <section className="screen">
@@ -55,6 +61,19 @@ export default async function ProgressPage() {
         <div className="card streakcard">
           <div className="big">🔥 {streak}</div>
           <div className="eyebrow">Racha de días</div>
+          <div className="sc-stats">
+            <span>
+              <b>{d.bestStreak}</b> mejor racha
+            </span>
+            <span>
+              <b>{d.daysLogged}</b> días con registro
+            </span>
+            {d.avgScore != null && (
+              <span>
+                <b>{d.avgScore}%</b> promedio
+              </span>
+            )}
+          </div>
           <div className="wk-dots">
             {calendar.map((c) => (
               <div className="d" key={c.date}>
@@ -76,6 +95,20 @@ export default async function ProgressPage() {
               <AddWeightButton variant="solid" label="Registrar peso de hoy" />
             </div>
           )}
+        </div>
+
+        <div className="prog-milestones">
+          <MilestoneTrack
+            milestones={milestones}
+            pace={pace}
+            startKg={start}
+            currentKg={current}
+            targetKg={weightTarget}
+          />
+        </div>
+
+        <div className="prog-ach">
+          <AchievementGrid items={achievements} />
         </div>
       </div>
     </section>
