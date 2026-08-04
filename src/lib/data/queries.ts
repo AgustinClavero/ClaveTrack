@@ -332,6 +332,7 @@ export async function getDashboard(): Promise<Dashboard | null> {
 export interface NutritionDay {
   onboarded: boolean;
   date: string;
+  timezone: string;
   goals: NutritionGoals;
   meals: Meal[];
   totals: ReturnType<typeof dayTotals>;
@@ -379,6 +380,7 @@ export async function getNutritionDay(): Promise<NutritionDay | null> {
   return {
     onboarded: true,
     date: ctx.today,
+    timezone: ctx.timezone,
     goals: mapGoals(goalRow),
     meals,
     totals: dayTotals(meals),
@@ -463,7 +465,7 @@ export async function getMealDetail(mealId: string): Promise<MealDetail | null> 
  */
 export async function getHabitsDay(
   categories?: HabitCategory[]
-): Promise<{ date: string; habits: Habit[]; threshold: number; days: DayCell[] } | null> {
+): Promise<{ date: string; timezone: string; habits: Habit[]; threshold: number; days: DayCell[] } | null> {
   const ctx = await getUserContext();
   if (!ctx) return null;
   const supabase = getServerClient();
@@ -508,7 +510,7 @@ export async function getHabitsDay(
     }));
   });
 
-  return { date: ctx.today, habits, threshold: ctx.streakThreshold, days: week };
+  return { date: ctx.today, timezone: ctx.timezone, habits, threshold: ctx.streakThreshold, days: week };
 }
 
 // ============================================================
@@ -529,8 +531,10 @@ export interface WorkoutRow {
 
 export interface ActivityDay {
   date: string;
+  timezone: string;
   habits: Habit[];
-  days: DayCell[];
+  /** Hábitos cuyo valor sale de las sesiones registradas, no de un stepper. */
+  autoHabitIds: string[];
   today: WorkoutRow[];
   week: WorkoutRow[];
   weightKg: number;
@@ -574,12 +578,32 @@ export async function getActivityDay(): Promise<ActivityDay | null> {
     date: w.log_date,
   });
   const all = (workoutsRes.data ?? []).map(map);
+  const todayWorkouts = all.filter((w) => w.date === ctx.today);
+
+  // Los hábitos de movimiento se alimentan de lo registrado: pasos del día
+  // y sesiones de la semana (la unidad "x/sem" es semanal por definición).
+  const stepsToday = todayWorkouts.reduce((s, w) => s + (w.steps ?? 0), 0);
+  const habits = habitsData?.habits ?? [];
+  const autoHabitIds: string[] = [];
+  habits.forEach((h) => {
+    const unit = h.unit.toLowerCase();
+    if (unit.includes("paso")) {
+      h.value = Math.max(h.value, stepsToday);
+      h.done = h.target ? h.value >= h.target : h.value > 0;
+      autoHabitIds.push(h.id);
+    } else if (unit === "x/sem") {
+      h.value = all.length;
+      h.done = h.target ? h.value >= h.target : h.value > 0;
+      autoHabitIds.push(h.id);
+    }
+  });
 
   return {
     date: ctx.today,
-    habits: habitsData?.habits ?? [],
-    days: week,
-    today: all.filter((w) => w.date === ctx.today),
+    timezone: ctx.timezone,
+    habits,
+    autoHabitIds,
+    today: todayWorkouts,
     week: all,
     weightKg: weightRes.data?.[0]?.weight_kg != null ? Number(weightRes.data[0].weight_kg) : 0,
     heightCm: ctx.profile?.height_cm != null ? Number(ctx.profile.height_cm) : null,

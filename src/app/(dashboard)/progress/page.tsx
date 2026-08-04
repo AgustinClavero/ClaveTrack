@@ -7,6 +7,7 @@ import { AchievementGrid } from "@/components/modules/AchievementGrid";
 import { MilestoneTrack } from "@/components/modules/MilestoneTrack";
 import { ProgressCalendar } from "@/components/modules/ProgressCalendar";
 import { Ring } from "@/components/ui/Ring";
+import { PageDate } from "@/components/shell/PageDate";
 import { weightMilestones, weightPace } from "@/lib/calculations/insights";
 
 export const dynamic = "force-dynamic";
@@ -32,9 +33,7 @@ export default async function ProgressPage() {
       <header className="screen-head">
         <div>
           <h1 className="screen-title">Progreso</h1>
-          <p className="screen-sub">
-            {weight.length ? `${weight.length} registros · meta ${nf(weightTarget, 1)} kg` : "Registrá tu peso para empezar"}
-          </p>
+          <PageDate date={d.date} timezone={d.timezone} />
         </div>
         <AddWeightButton />
       </header>

@@ -4,6 +4,7 @@ import { Settings } from "lucide-react";
 import { getHabitsDay } from "@/lib/data/queries";
 import { HabitCard } from "@/components/modules/HabitCard";
 import { Ring } from "@/components/ui/Ring";
+import { PageDate } from "@/components/shell/PageDate";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,7 @@ export default async function RoutinePage() {
       <header className="screen-head">
         <div>
           <h1 className="screen-title">Rutina</h1>
-          <p className="screen-sub">Planificación, descanso, lectura y estudio</p>
+          <PageDate date={d.date} timezone={d.timezone} />
         </div>
         <Link href="/settings" className="head-action">
           <Settings size={17} />
@@ -43,7 +44,7 @@ export default async function RoutinePage() {
                   : `Te faltan ${d.habits.length - done}`}
             </div>
           </div>
-          <Ring size={84} stroke={9} value={pct / 100} color="var(--ink)" centerFontSize={22}>
+          <Ring size={84} stroke={9} value={pct / 100} color="var(--amber)" track="var(--amber-tint)" centerFontSize={22}>
             {pct}%
           </Ring>
         </div>

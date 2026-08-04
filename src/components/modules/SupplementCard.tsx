@@ -55,7 +55,7 @@ export function SupplementCard({ items }: { items: Habit[] }) {
   return (
     <div className="card supp-card">
       <div className="sup-head">
-        <Ring size={64} stroke={8} value={pct} color="var(--ink)" track="var(--surface-2)" centerFontSize={20}>
+        <Ring size={64} stroke={8} value={pct} color="var(--red)" track="var(--red-tint)" centerFontSize={20}>
           <Pill size={20} strokeWidth={2.2} />
         </Ring>
         <div className="sup-id">

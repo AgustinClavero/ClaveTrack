@@ -8,8 +8,8 @@ import { Ring } from "@/components/ui/Ring";
 import { MacroCard } from "@/components/modules/MacroCard";
 import { MealRow } from "@/components/modules/MealRow";
 import { AddMealButton } from "@/components/modules/AddMealButton";
-import { WaterTracker } from "@/components/modules/WaterTracker";
 import { HabitCard } from "@/components/modules/HabitCard";
+import { PageDate } from "@/components/shell/PageDate";
 import { SupplementCard } from "@/components/modules/SupplementCard";
 
 export const dynamic = "force-dynamic";
@@ -30,9 +30,7 @@ export default async function NutritionPage() {
       <header className="screen-head">
         <div>
           <h1 className="screen-title">Nutrición</h1>
-          <p className="screen-sub">
-            {meals.length === 0 ? "Sin comidas todavía" : `${meals.length} ${meals.length === 1 ? "comida" : "comidas"} hoy`}
-          </p>
+          <PageDate date={d.date} timezone={d.timezone} />
         </div>
         <Link href="/settings" className="head-action">
           <Settings size={17} />
@@ -61,8 +59,6 @@ export default async function NutritionPage() {
           <MacroCard label="Carbos" value={totals.carbs} goal={goals.carbs} emoji="🌾" color="var(--amber)" tint="var(--amber-tint)" />
           <MacroCard label="Grasa" value={totals.fat} goal={goals.fat} emoji="🥑" color="var(--blue)" tint="var(--blue-tint)" />
         </div>
-
-        <WaterTracker waterMl={d.waterMl} goalMl={goals.waterMl} />
 
         <SupplementCard items={supplements} />
 

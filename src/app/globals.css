@@ -5103,3 +5103,32 @@ svg.line {
 .habit-cardx[data-cat="mind"].done {
   border-color: var(--ink);
 }
+
+/* Fecha del día bajo el título de cada página. */
+.page-date {
+  margin: var(--sp-1) 0 0;
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+  font-weight: 600;
+}
+
+/* Hábitos que se completan solos con lo registrado. */
+.hc-auto {
+  margin: auto 0 0;
+  padding-top: var(--sp-2);
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  font-weight: 600;
+  border-top: 1px solid var(--line);
+}
+
+/* Bloque de resumen semanal, separado de los datos del día. */
+.week-block {
+  display: flex;
+  flex-direction: column;
+}
+@media (min-width: 768px) {
+  .week-block {
+    grid-column: 1 / -1;
+  }
+}
