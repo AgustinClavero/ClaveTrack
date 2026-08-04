@@ -1,17 +1,23 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { Trash2 } from "lucide-react";
-import { deleteMeal } from "@/app/actions";
+import Link from "next/link";
+import Image from "next/image";
 import { nf } from "@/lib/utils";
 
+/**
+ * Fila de comida del día: la foto manda como miniatura (estilo Cal AI).
+ * Toda la fila navega al detalle; borrar vive ahí, no acá.
+ */
 export function MealRow({
   id,
   label,
   emoji,
   time,
   kcal,
+  protein,
+  carbs,
+  fat,
+  photoUrl,
   items,
 }: {
   id: string;
@@ -19,45 +25,44 @@ export function MealRow({
   emoji: string;
   time?: string;
   kcal: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  photoUrl?: string | null;
   items: string[];
 }) {
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
-  const [confirm, setConfirm] = useState(false);
-
-  function remove() {
-    startTransition(async () => {
-      await deleteMeal({ mealId: id });
-      setConfirm(false);
-      router.refresh();
-    });
-  }
-
   return (
-    <div className="meal-row">
-      <div className="thumb">{emoji}</div>
+    <Link href={`/nutrition/${id}`} className="meal-row">
+      <div className={`mr-photo${photoUrl ? "" : " empty"}`}>
+        {photoUrl ? (
+          <Image src={photoUrl} alt="" fill sizes="120px" className="mr-img" />
+        ) : (
+          <span aria-hidden="true">{emoji}</span>
+        )}
+      </div>
+
       <div className="mr-main">
         <div className="mr-top">
           <span className="name">{label}</span>
           {time && <span className="time">{time}</span>}
         </div>
-        <div className="mr-items">{items.join(" · ")}</div>
-      </div>
-      <div className="mr-kcal">{nf(kcal)} kcal</div>
-      {confirm ? (
-        <div className="mr-confirm">
-          <button className="linkish" onClick={remove} disabled={pending}>
-            {pending ? "…" : "Borrar"}
-          </button>
-          <button className="linkish muted" onClick={() => setConfirm(false)}>
-            No
-          </button>
+        <div className="mr-kcal-row">
+          <span aria-hidden="true">🔥</span>
+          <b>{nf(kcal)} calorías</b>
         </div>
-      ) : (
-        <button className="mr-del" onClick={() => setConfirm(true)} aria-label={`Borrar ${label}`}>
-          <Trash2 size={16} />
-        </button>
-      )}
-    </div>
+        <div className="mr-macros">
+          <span>
+            <i aria-hidden="true">🍗</i> {nf(protein, 0)}g
+          </span>
+          <span>
+            <i aria-hidden="true">🌾</i> {nf(carbs, 0)}g
+          </span>
+          <span>
+            <i aria-hidden="true">🥑</i> {nf(fat, 0)}g
+          </span>
+        </div>
+        {items.length > 0 && <div className="mr-items">{items.join(" · ")}</div>}
+      </div>
+    </Link>
   );
 }

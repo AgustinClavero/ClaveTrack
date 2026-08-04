@@ -101,6 +101,7 @@ type MealRow = {
   meal_type: string;
   eaten_at: string | null;
   planned: boolean | null;
+  photo_path?: string | null;
   meal_items: {
     id: string;
     food_id: string | null;
@@ -343,7 +344,7 @@ export async function getNutritionDay(): Promise<NutritionDay | null> {
       .limit(1),
     supabase
       .from("meals")
-      .select("id, meal_type, eaten_at, planned, meal_items(*)")
+      .select("id, meal_type, eaten_at, planned, photo_path, meal_items(*)")
       .eq("user_id", ctx.userId)
       .eq("log_date", ctx.today)
       .order("created_at"),
@@ -353,7 +354,20 @@ export async function getNutritionDay(): Promise<NutritionDay | null> {
   const goalRow = goalsRes.data?.[0];
   if (!goalRow) return { onboarded: false } as NutritionDay;
 
-  const meals = mapMeals((mealsRes.data ?? []) as MealRow[], ctx.timezone);
+  const rows = (mealsRes.data ?? []) as MealRow[];
+  const meals = mapMeals(rows, ctx.timezone);
+
+  // Una sola llamada para firmar todas las miniaturas del día.
+  const paths = rows.map((r) => r.photo_path).filter((p): p is string => !!p);
+  if (paths.length) {
+    const { data: signed } = await supabase.storage.from("meals").createSignedUrls(paths, 3600);
+    const urlByPath = new Map((signed ?? []).map((s) => [s.path ?? "", s.signedUrl]));
+    meals.forEach((m, i) => {
+      const p = rows[i].photo_path;
+      if (p) m.photoUrl = urlByPath.get(p) ?? null;
+    });
+  }
+
   return {
     onboarded: true,
     date: ctx.today,
@@ -361,6 +375,73 @@ export async function getNutritionDay(): Promise<NutritionDay | null> {
     meals,
     totals: dayTotals(meals),
     waterMl: logRes.data?.water_ml ?? 0,
+  };
+}
+
+/** URL firmada (1 h) de una foto del bucket privado `meals`. */
+async function signedPhoto(path: string | null): Promise<string | null> {
+  if (!path) return null;
+  const supabase = getServerClient();
+  const { data } = await supabase.storage.from("meals").createSignedUrl(path, 3600);
+  return data?.signedUrl ?? null;
+}
+
+export interface MealDetail {
+  id: string;
+  type: MealType;
+  label: string;
+  emoji: string;
+  time?: string;
+  note: string | null;
+  photoUrl: string | null;
+  photoPath: string | null;
+  totals: ReturnType<typeof dayTotals>;
+  items: { id: string; name: string; quantity: number; base: string; kcal: number; protein: number; carbs: number; fat: number }[];
+}
+
+export const MEAL_LABEL: Record<string, string> = {
+  desayuno: "Desayuno",
+  almuerzo: "Almuerzo",
+  merienda: "Merienda",
+  cena: "Cena",
+  colacion: "Colación",
+  bebida: "Bebida",
+};
+
+export async function getMealDetail(mealId: string): Promise<MealDetail | null> {
+  const ctx = await getUserContext();
+  if (!ctx) return null;
+  const supabase = getServerClient();
+
+  const { data } = await supabase
+    .from("meals")
+    .select("id, meal_type, eaten_at, planned, note, photo_path, meal_items(*)")
+    .eq("id", mealId)
+    .eq("user_id", ctx.userId)
+    .maybeSingle();
+  if (!data) return null;
+
+  const mapped = mapMeals([data as unknown as MealRow], ctx.timezone)[0];
+  return {
+    id: data.id,
+    type: mapped.type,
+    label: MEAL_LABEL[data.meal_type] ?? data.meal_type,
+    emoji: mapped.emoji ?? "🍽",
+    time: mapped.time,
+    note: data.note,
+    photoPath: data.photo_path,
+    photoUrl: await signedPhoto(data.photo_path),
+    totals: dayTotals([mapped]),
+    items: mapped.items.map((i) => ({
+      id: i.id,
+      name: i.foodName,
+      quantity: i.quantity,
+      base: i.base,
+      kcal: i.macros.kcal,
+      protein: i.macros.protein,
+      carbs: i.macros.carbs,
+      fat: i.macros.fat,
+    })),
   };
 }
 

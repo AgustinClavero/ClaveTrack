@@ -3,9 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { getServerClient, getUserContext } from "@/lib/data/context";
 import { materializeDayScore } from "@/lib/data/score";
-import { foodCreateSchema, logMealSchema, nutritionGoalsSchema, uuid } from "@/lib/validations";
+import { foodCreateSchema, logMealSchema, nutritionGoalsSchema, updateMealSchema, uuid } from "@/lib/validations";
 import { DEFAULT_FOODS } from "@/lib/data/default-foods";
 import type { ActionResult } from "@/types";
+import type { TablesUpdate } from "@/types/database";
 
 function revalidateDay() {
   revalidatePath("/today");
@@ -143,6 +144,9 @@ export async function logMeal(input: unknown): Promise<ActionResult> {
     if (foodMap.size !== new Set(foodIds).size) return { ok: false, error: "Algún alimento ya no existe." };
   }
 
+  // La foto debe vivir en la carpeta del propio usuario.
+  const photoPath = parsed.data.photoPath?.startsWith(`${ctx.userId}/`) ? parsed.data.photoPath : null;
+
   const { data: meal, error: mealErr } = await supabase
     .from("meals")
     .insert({
@@ -151,6 +155,7 @@ export async function logMeal(input: unknown): Promise<ActionResult> {
       meal_type: parsed.data.mealType,
       eaten_at: new Date().toISOString(),
       note: parsed.data.note || null,
+      photo_path: photoPath,
     })
     .select("id")
     .single();
@@ -199,6 +204,89 @@ export async function logMeal(input: unknown): Promise<ActionResult> {
 
   await materializeDayScore(supabase, ctx.userId, ctx.today);
   revalidateDay();
+  return { ok: true, data: undefined };
+}
+
+/**
+ * Edita una comida: nota, foto y multiplicador de porciones.
+ * `servings` reescala los macros snapshot de todos los ítems.
+ */
+export async function updateMeal(input: unknown): Promise<ActionResult> {
+  const parsed = updateMealSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Datos inválidos." };
+  const ctx = await getUserContext();
+  if (!ctx) return { ok: false, error: "Sesión expirada." };
+  const supabase = getServerClient();
+  const { mealId, note, photoPath, servings } = parsed.data;
+
+  const { data: meal } = await supabase
+    .from("meals")
+    .select("id, log_date")
+    .eq("id", mealId)
+    .eq("user_id", ctx.userId)
+    .maybeSingle();
+  if (!meal) return { ok: false, error: "Esa comida no existe." };
+
+  const patch: TablesUpdate<"meals"> = {};
+  if (note !== undefined) patch.note = note;
+  if (photoPath !== undefined) {
+    patch.photo_path = photoPath?.startsWith(`${ctx.userId}/`) ? photoPath : null;
+  }
+  if (Object.keys(patch).length) {
+    const { error } = await supabase.from("meals").update(patch).eq("id", mealId).eq("user_id", ctx.userId);
+    if (error) return { ok: false, error: "No se pudo actualizar la comida." };
+  }
+
+  if (servings != null && servings !== 1) {
+    const { data: items } = await supabase
+      .from("meal_items")
+      .select("id, quantity, kcal, protein_g, carbs_g, fat_g, fiber_g")
+      .eq("meal_id", mealId);
+    const r1 = (n: number) => Math.round(n * 10) / 10;
+    for (const it of items ?? []) {
+      await supabase
+        .from("meal_items")
+        .update({
+          quantity: r1(Number(it.quantity) * servings),
+          kcal: r1(Number(it.kcal) * servings),
+          protein_g: r1(Number(it.protein_g) * servings),
+          carbs_g: r1(Number(it.carbs_g) * servings),
+          fat_g: r1(Number(it.fat_g) * servings),
+          fiber_g: r1(Number(it.fiber_g) * servings),
+        })
+        .eq("id", it.id);
+    }
+  }
+
+  await materializeDayScore(supabase, ctx.userId, meal.log_date);
+  revalidateDay();
+  revalidatePath(`/nutrition/${mealId}`);
+  return { ok: true, data: undefined };
+}
+
+/** Quita un ítem de una comida. */
+export async function deleteMealItem(input: { itemId: string }): Promise<ActionResult> {
+  const parsed = uuid.safeParse(input?.itemId);
+  if (!parsed.success) return { ok: false, error: "Ítem inválido." };
+  const ctx = await getUserContext();
+  if (!ctx) return { ok: false, error: "Sesión expirada." };
+  const supabase = getServerClient();
+
+  // Verifica pertenencia a través de la comida padre.
+  const { data: item } = await supabase
+    .from("meal_items")
+    .select("id, meal_id, meals!inner(user_id, log_date)")
+    .eq("id", parsed.data)
+    .maybeSingle();
+  const parent = item?.meals as unknown as { user_id: string; log_date: string } | undefined;
+  if (!item || parent?.user_id !== ctx.userId) return { ok: false, error: "Ese ítem no existe." };
+
+  const { error } = await supabase.from("meal_items").delete().eq("id", parsed.data);
+  if (error) return { ok: false, error: "No se pudo quitar el alimento." };
+
+  await materializeDayScore(supabase, ctx.userId, parent.log_date);
+  revalidateDay();
+  revalidatePath(`/nutrition/${item.meal_id}`);
   return { ok: true, data: undefined };
 }
 

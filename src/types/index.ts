@@ -42,6 +42,8 @@ export interface Meal {
   time?: string; // HH:mm
   planned: boolean;
   emoji?: string;
+  /** URL firmada de la foto (bucket privado). */
+  photoUrl?: string | null;
   items: MealItem[];
 }
 

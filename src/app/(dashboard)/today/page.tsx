@@ -64,16 +64,30 @@ export default async function TodayPage() {
           </div>
         </div>
 
-        {/* Nivel / XP */}
+        {/* Nivel / XP / racha */}
         <div className="card lvl-card">
-          <div className="lvl">
-            <span className="lv">Nivel {level.level}</span>
-            <span className="bar">
-              <i style={{ width: `${levelPct}%` }} />
-            </span>
-            <span className="xp">
+          <div className="dc-head">
+            <span className="eyebrow">Tu constancia</span>
+            <span className="lv-badge">Nivel {level.level}</span>
+          </div>
+          <div className="lv-bar">
+            <i style={{ width: `${levelPct}%` }} />
+          </div>
+          <div className="lv-meta">
+            <span>
               {level.inLevel} / {level.per} XP
             </span>
+            <span>faltan {level.per - level.inLevel} para el nivel {level.level + 1}</span>
+          </div>
+          <div className="lv-stats">
+            <div>
+              <b>🔥 {d.streak}</b>
+              <span>días de racha</span>
+            </div>
+            <div>
+              <b>{calendar.filter((c) => c.score != null).length}</b>
+              <span>días con registro</span>
+            </div>
           </div>
         </div>
 

@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, Search } from "lucide-react";
+import Image from "next/image";
+import { Camera, Plus, Trash2, Search, X } from "lucide-react";
 import { useUIStore } from "@/lib/store";
 import { Sheet } from "@/components/shell/Sheet";
 import { searchFoods, logMeal, createFood, type FoodHit } from "@/app/actions";
+import { uploadMealPhoto } from "@/lib/upload";
 import { nf } from "@/lib/utils";
 
 const MEAL_TYPES = [
@@ -46,6 +48,9 @@ export function MealSheet() {
   const [items, setItems] = useState<Draft[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [showNewFood, setShowNewFood] = useState(false);
+  const [photo, setPhoto] = useState<{ path: string; preview: string } | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -54,7 +59,20 @@ export function MealSheet() {
     setQuery("");
     setError(null);
     setShowNewFood(false);
+    setPhoto(null);
   }, [open]);
+
+  async function onPickPhoto(file: File) {
+    setError(null);
+    setUploading(true);
+    const res = await uploadMealPhoto(file);
+    setUploading(false);
+    if (!res.ok) {
+      setError(res.error);
+      return;
+    }
+    setPhoto({ path: res.path, preview: URL.createObjectURL(file) });
+  }
 
   // Búsqueda con debounce.
   useEffect(() => {
@@ -98,6 +116,7 @@ export function MealSheet() {
     startTransition(async () => {
       const res = await logMeal({
         mealType,
+        photoPath: photo?.path ?? null,
         items: items.map((d) => ({ kind: "food" as const, foodId: d.food.id, quantity: d.quantity })),
       });
       if (!res.ok) {
@@ -111,6 +130,33 @@ export function MealSheet() {
 
   return (
     <Sheet open={open} onClose={closeSheet} title="Registrar comida" className="meal-sheet">
+      {/* Foto: se muestra como banner, igual que en el detalle. */}
+      {photo ? (
+        <div className="ms-photo">
+          <Image src={photo.preview} alt="Foto de la comida" fill sizes="100vw" className="md-img" />
+          <button className="md-fab ms-photo-x" onClick={() => setPhoto(null)} aria-label="Quitar foto">
+            <X size={16} />
+          </button>
+        </div>
+      ) : (
+        <button className="ms-photo-add" onClick={() => fileRef.current?.click()} disabled={uploading}>
+          <Camera size={18} />
+          <span>{uploading ? "Subiendo…" : "Agregar foto"}</span>
+        </button>
+      )}
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        hidden
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) onPickPhoto(f);
+          e.target.value = "";
+        }}
+      />
+
       <div className="chip-row" role="group" aria-label="Tipo de comida">
         {MEAL_TYPES.map((m) => (
           <button

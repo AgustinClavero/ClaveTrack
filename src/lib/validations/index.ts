@@ -80,9 +80,19 @@ const mealItemManual = z.object({
 export const logMealSchema = z.object({
   mealType,
   note: z.string().trim().max(300).optional(),
+  /** Ruta en Storage: {user_id}/{archivo}. Se valida la pertenencia en la acción. */
+  photoPath: z.string().trim().max(300).nullable().optional(),
   items: z.array(z.discriminatedUnion("kind", [mealItemFromFood, mealItemManual])).min(1).max(30),
 });
 export type LogMealInput = z.infer<typeof logMealSchema>;
+
+export const updateMealSchema = z.object({
+  mealId: uuid,
+  note: z.string().trim().max(300).nullable().optional(),
+  photoPath: z.string().trim().max(300).nullable().optional(),
+  /** Multiplicador de porciones aplicado a todos los ítems (0.25 a 10). */
+  servings: z.number().min(0.25).max(10).optional(),
+});
 
 export const nutritionGoalsSchema = z.object({
   kcal: z.number().int().min(800).max(8000),
