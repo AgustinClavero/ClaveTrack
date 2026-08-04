@@ -17,7 +17,7 @@ import {
   type DayScore,
 } from "@/lib/calculations/scoring";
 import { computeAchievements, dayInsights, type Achievement, type Insight } from "@/lib/calculations/insights";
-import { dayWindow, recentDays, type DayCell } from "@/lib/date";
+import { addDays, dayWindow, monthGrid, recentDays, type DayCell } from "@/lib/date";
 import type { Habit, HabitCategory, Meal, MealType, NutritionGoals, WeightPoint } from "@/types";
 
 const MEAL_EMOJI: Record<string, string> = {
@@ -609,7 +609,10 @@ export interface Progress {
   perfectDays: number;
   avgScore: number | null;
   threshold: number;
-  recentDays: DayDetail[];
+  timezone: string;
+  /** Mes visible por defecto en el calendario ("YYYY-MM"). */
+  month: string;
+  monthDays: DayDetail[];
 }
 
 /** Racha más larga del histórico (no solo la vigente). */
@@ -632,12 +635,108 @@ function bestStreakOf(scoreByDate: Map<string, number>, threshold: number): numb
   return best;
 }
 
+
+/**
+ * Detalle día por día en un rango: qué se cumplió y qué no.
+ * Lo usan tanto Progreso (mes visible) como la consulta puntual del modal.
+ */
+export async function buildDayDetails(from: string, to: string): Promise<DayDetail[]> {
+  const ctx = await getUserContext();
+  if (!ctx) return [];
+  const supabase = getServerClient();
+
+  const [habitsRes, entriesRes, mealsRes, workoutsRes, scoresRes] = await Promise.all([
+    supabase.from("habits").select(HABIT_COLS).eq("user_id", ctx.userId).eq("active", true).order("display_order"),
+    supabase
+      .from("habit_entries")
+      .select("habit_id, done, value, log_date")
+      .eq("user_id", ctx.userId)
+      .gte("log_date", from)
+      .lte("log_date", to),
+    supabase.from("meals").select("log_date").eq("user_id", ctx.userId).gte("log_date", from).lte("log_date", to),
+    supabase
+      .from("workouts")
+      .select("log_date, minutes, kcal")
+      .eq("user_id", ctx.userId)
+      .gte("log_date", from)
+      .lte("log_date", to),
+    supabase
+      .from("daily_scores")
+      .select("log_date, total")
+      .eq("user_id", ctx.userId)
+      .gte("log_date", from)
+      .lte("log_date", to),
+  ]);
+
+  const habitRows = (habitsRes.data ?? []) as HabitRow[];
+  const byDate = new Map<string, Map<string, { done: boolean; value: number }>>();
+  (entriesRes.data ?? []).forEach((e) => {
+    if (!byDate.has(e.log_date)) byDate.set(e.log_date, new Map());
+    byDate.get(e.log_date)!.set(e.habit_id, { done: e.done ?? false, value: Number(e.value ?? 0) });
+  });
+  const mealDates = new Set((mealsRes.data ?? []).map((m) => m.log_date));
+  const workoutByDate = new Map<string, { minutes: number; kcal: number }>();
+  (workoutsRes.data ?? []).forEach((w) => {
+    const cur = workoutByDate.get(w.log_date) ?? { minutes: 0, kcal: 0 };
+    workoutByDate.set(w.log_date, { minutes: cur.minutes + w.minutes, kcal: cur.kcal + w.kcal });
+  });
+  const totals = new Map((scoresRes.data ?? []).map((r) => [r.log_date, r.total]));
+
+  const out: DayDetail[] = [];
+  for (let d = from; d <= to; d = addDays(d, 1)) {
+    const m = byDate.get(d);
+    const items = habitRows.map((h) => {
+      const e = m?.get(h.id);
+      const dec = ["l", "h"].includes((h.unit ?? "").toLowerCase()) ? 1 : 0;
+      return {
+        label: h.name,
+        emoji: iconFor(h.name, h.emoji),
+        done: e?.done ?? false,
+        detail:
+          h.target_value != null
+            ? `${new Intl.NumberFormat("es-AR", { minimumFractionDigits: dec, maximumFractionDigits: dec }).format(e?.value ?? 0)} / ${h.target_value} ${h.unit ?? ""}`.trim()
+            : undefined,
+      };
+    });
+
+    const w = workoutByDate.get(d);
+    items.unshift({
+      label: "Actividad",
+      emoji: "🏃",
+      done: !!w,
+      detail: w ? `${w.minutes} min · ${w.kcal} kcal` : undefined,
+    });
+    items.unshift({
+      label: "Comidas registradas",
+      emoji: "🍽",
+      done: mealDates.has(d),
+      detail: undefined,
+    });
+
+    out.push({
+      date: d,
+      label: labelFor(d),
+      total: totals.get(d) ?? 0,
+      items,
+    });
+  }
+  return out;
+}
+
+/** "Mar 4 Ago" a partir de una fecha ISO. */
+function labelFor(iso: string): string {
+  const f = new Intl.DateTimeFormat("es-AR", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }).format(
+    new Date(iso + "T12:00:00Z")
+  );
+  return f.replace(/\./g, "").replace(/\w/g, (c) => c.toUpperCase());
+}
+
 export async function getProgress(): Promise<Progress | null> {
   const ctx = await getUserContext();
   if (!ctx) return null;
   const supabase = getServerClient();
   const week = recentDays(7, ctx.timezone);
-  const [weightRes, historyRes, mealsCountRes, habitsRes, weekEntriesRes, weekMealsRes] = await Promise.all([
+  const [weightRes, historyRes, mealsCountRes] = await Promise.all([
     supabase
       .from("body_entries")
       .select("log_date, weight_kg")
@@ -647,19 +746,6 @@ export async function getProgress(): Promise<Progress | null> {
       .limit(400),
     getScoreHistory(ctx),
     supabase.from("meals").select("id", { count: "exact", head: true }).eq("user_id", ctx.userId),
-    supabase.from("habits").select(HABIT_COLS).eq("user_id", ctx.userId).eq("active", true).order("display_order"),
-    supabase
-      .from("habit_entries")
-      .select("habit_id, done, value, log_date")
-      .eq("user_id", ctx.userId)
-      .gte("log_date", week[0].date)
-      .lte("log_date", ctx.today),
-    supabase
-      .from("meals")
-      .select("log_date")
-      .eq("user_id", ctx.userId)
-      .gte("log_date", week[0].date)
-      .lte("log_date", ctx.today),
   ]);
 
   const weight: WeightPoint[] = (weightRes.data ?? [])
@@ -692,43 +778,10 @@ export async function getProgress(): Promise<Progress | null> {
         ? weight[weight.length - 1].kg
         : 80;
 
-  // Detalle por día: qué se cumplió y qué no.
-  const habitRows = (habitsRes.data ?? []) as HabitRow[];
-  const entriesByDate = new Map<string, Map<string, { done: boolean; value: number }>>();
-  (weekEntriesRes.data ?? []).forEach((e) => {
-    if (!entriesByDate.has(e.log_date)) entriesByDate.set(e.log_date, new Map());
-    entriesByDate.get(e.log_date)!.set(e.habit_id, { done: e.done ?? false, value: Number(e.value ?? 0) });
-  });
-  const mealDates = new Set((weekMealsRes.data ?? []).map((m) => m.log_date));
-
-  const detail: DayDetail[] = [...week].reverse().map((c) => {
-    const m = entriesByDate.get(c.date);
-    const items = habitRows.map((h) => {
-      const e = m?.get(h.id);
-      const dec = ["l", "h"].includes((h.unit ?? "").toLowerCase()) ? 1 : 0;
-      return {
-        label: h.name,
-        emoji: iconFor(h.name, h.emoji),
-        done: e?.done ?? false,
-        detail:
-          h.target_value != null
-            ? `${new Intl.NumberFormat("es-AR", { minimumFractionDigits: dec, maximumFractionDigits: dec }).format(e?.value ?? 0)} / ${h.target_value} ${h.unit ?? ""}`.trim()
-            : undefined,
-      };
-    });
-    items.unshift({
-      label: "Comidas registradas",
-      emoji: "🍽",
-      done: mealDates.has(c.date),
-      detail: undefined,
-    });
-    return {
-      date: c.date,
-      label: `${c.weekday} ${c.dayNum} ${c.monthShort}`,
-      total: scoreByDate.get(c.date) ?? 0,
-      items,
-    };
-  });
+  // Calendario: mes en curso con el detalle de cada día.
+  const month = ctx.today.slice(0, 7);
+  const grid = monthGrid(month, ctx.timezone);
+  const monthDays = await buildDayDetails(grid[0].date, grid[grid.length - 1].date);
 
   return {
     date: ctx.today,
@@ -742,7 +795,9 @@ export async function getProgress(): Promise<Progress | null> {
     perfectDays,
     avgScore,
     threshold: ctx.streakThreshold,
-    recentDays: detail,
+    timezone: ctx.timezone,
+    month,
+    monthDays,
   };
 }
 

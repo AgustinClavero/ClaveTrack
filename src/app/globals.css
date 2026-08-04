@@ -4837,3 +4837,269 @@ svg.line {
 .side-streak {
   position: relative;
 }
+
+/* ============================================================
+   CALENDARIO DE PROGRESO + MODAL DEL DIA
+   ============================================================ */
+.prog-cal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+.pc-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.pc-month {
+  margin: var(--sp-1) 0 0;
+  font-size: var(--fs-xl);
+  font-weight: 800;
+  letter-spacing: var(--tracking-tight);
+}
+.pc-nav {
+  display: flex;
+  gap: var(--sp-2);
+}
+.pc-nav button {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+.pc-nav button:hover:not(:disabled) {
+  border-color: var(--ink);
+}
+.pc-nav button:disabled {
+  opacity: 0.4;
+}
+.pc-stats {
+  display: flex;
+  gap: var(--sp-4);
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  font-weight: 600;
+}
+.pc-stats b {
+  color: var(--text);
+  font-weight: 800;
+}
+.pc-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--sp-1);
+  padding-top: var(--sp-2);
+  border-top: 1px solid var(--line);
+}
+.pc-week span {
+  text-align: center;
+  font-size: var(--fs-2xs);
+  font-weight: 800;
+  color: var(--text-2);
+}
+.pc-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--sp-1);
+  transition: opacity var(--dur-fast) var(--ease);
+}
+.pc-grid.loading {
+  opacity: 0.45;
+  pointer-events: none;
+}
+.pc-day {
+  display: grid;
+  place-items: center;
+  padding: var(--sp-1) 0;
+  border: none;
+  background: none;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease);
+}
+.pc-day:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+.pc-day:disabled {
+  cursor: default;
+}
+.pc-day.out {
+  opacity: 0.3;
+}
+.pc-day.future {
+  opacity: 0.35;
+}
+.pc-num {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+}
+.pc-day.today .pc-num {
+  font-weight: 900;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Modal de detalle del dia */
+.day-modal {
+  max-height: 82vh;
+}
+.dm-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding-bottom: var(--sp-4);
+  border-bottom: 1px solid var(--line);
+}
+.dm-head > div {
+  flex: 1;
+  min-width: 0;
+}
+.dm-head h3 {
+  margin: 0;
+  font-size: var(--fs-lg);
+}
+.dm-head p {
+  margin: 2px 0 0;
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  font-weight: 600;
+}
+.dm-list {
+  list-style: none;
+  margin: var(--sp-4) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.dm-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  background: var(--surface-2);
+  border-radius: var(--r-md);
+}
+.dm-list li.no {
+  opacity: 0.6;
+}
+.dm-ic {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  color: var(--text-2);
+}
+.dm-list li.ok .dm-ic {
+  background: var(--ink);
+  color: var(--ink-contrast);
+}
+.dm-name {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+}
+.dm-val {
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   BARRAS DE PROGRESO CON COLOR
+   Los anillos de macro ya usan color; las barras lo acompañan.
+   ============================================================ */
+.wt-bar i {
+  background: linear-gradient(90deg, var(--blue), var(--blue));
+}
+.lv-bar i {
+  background: linear-gradient(90deg, var(--amber), var(--red));
+}
+.wbar i {
+  background: linear-gradient(90deg, var(--blue), var(--success));
+}
+.ms-bar i {
+  background: linear-gradient(90deg, var(--amber), var(--success));
+}
+.ach-bar i {
+  background: linear-gradient(90deg, var(--amber), var(--red));
+}
+.hc-bar.on i {
+  background: var(--ink);
+}
+.seg-bar.on {
+  background: linear-gradient(90deg, var(--amber), var(--red));
+}
+
+/* ============================================================
+   NUTRICION — alturas parejas en la fila superior
+   ============================================================ */
+.nut-grid > .cal-hero,
+.nut-grid > .macro-cards,
+.nut-grid > .water-card,
+.nut-grid > .supp-card {
+  align-self: stretch;
+}
+.macro-cards > .macro-card {
+  height: 100%;
+  justify-content: space-between;
+}
+.water-card {
+  justify-content: space-between;
+}
+.cal-hero {
+  align-items: center;
+}
+.cal-hero > div:first-child {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100%;
+}
+
+/* Segunda fila de nutrición: suplementos y hábitos a la misma altura. */
+@media (min-width: 1024px) {
+  .nut-grid > .supp-card,
+  .nut-grid > .cat-habits {
+    align-self: stretch;
+  }
+  .cat-habits .habit-grid {
+    height: 100%;
+  }
+}
+
+/* Mini gráfico de hábitos: color por categoría en vez de gris. */
+.habit-cardx[data-cat="nutrition"] .hc-bar.on i {
+  background: var(--red);
+}
+.habit-cardx[data-cat="activity"] .hc-bar.on i {
+  background: var(--blue);
+}
+.habit-cardx[data-cat="routine"] .hc-bar.on i {
+  background: var(--amber);
+}
+.habit-cardx[data-cat="mind"] .hc-bar.on i {
+  background: var(--success);
+}
+.hc-bar i {
+  background: var(--line);
+}
+
+/* El anillo de cada card toma el acento de su categoría. */
+.habit-cardx[data-cat="nutrition"].done,
+.habit-cardx[data-cat="activity"].done,
+.habit-cardx[data-cat="routine"].done,
+.habit-cardx[data-cat="mind"].done {
+  border-color: var(--ink);
+}

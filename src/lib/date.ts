@@ -84,3 +84,67 @@ function weekdayShort(dateISO: string): string {
   const clean = wd.replace(".", "");
   return clean.charAt(0).toUpperCase() + clean.slice(1);
 }
+
+export interface MonthCell extends DayCell {
+  /** false cuando la celda pertenece al mes anterior o siguiente. */
+  inMonth: boolean;
+}
+
+/**
+ * Grilla de un mes completa, alineada de lunes a domingo.
+ * Devuelve siempre semanas enteras: las puntas traen días del mes vecino.
+ */
+export function monthGrid(monthISO: string, timeZone: string = DEFAULT_TZ): MonthCell[] {
+  const today = userToday(timeZone);
+  const year = Number(monthISO.slice(0, 4));
+  const month = Number(monthISO.slice(5, 7));
+
+  const first = new Date(Date.UTC(year, month - 1, 1));
+  // getUTCDay(): 0 = domingo. Se desplaza para que la semana arranque el lunes.
+  const lead = (first.getUTCDay() + 6) % 7;
+  const start = new Date(first);
+  start.setUTCDate(start.getUTCDate() - lead);
+
+  const cells: MonthCell[] = [];
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(start);
+    d.setUTCDate(d.getUTCDate() + i);
+    const iso = d.toISOString().slice(0, 10);
+    cells.push({
+      date: iso,
+      weekday: weekdayShort(iso),
+      dayNum: d.getUTCDate(),
+      isToday: iso === today,
+      monthShort: monthShortOf(iso),
+      isFuture: iso > today,
+      inMonth: d.getUTCMonth() === month - 1,
+    });
+    // Corta al completar la última semana que contiene días del mes.
+    if (i >= 27 && (i + 1) % 7 === 0 && d.getUTCMonth() !== month - 1) break;
+  }
+  return cells;
+}
+
+function monthShortOf(dateISO: string): string {
+  const m = new Intl.DateTimeFormat("es-AR", { month: "short", timeZone: "UTC" }).format(
+    new Date(dateISO + "T12:00:00Z")
+  );
+  const clean = m.replace(".", "");
+  return clean.charAt(0).toUpperCase() + clean.slice(1);
+}
+
+/** Nombre largo del mes: "Agosto 2026". */
+export function monthLabel(monthISO: string): string {
+  const l = new Intl.DateTimeFormat("es-AR", { month: "long", year: "numeric", timeZone: "UTC" }).format(
+    new Date(monthISO + "-01T12:00:00Z")
+  );
+  return l.charAt(0).toUpperCase() + l.slice(1);
+}
+
+/** Suma meses a un "YYYY-MM". */
+export function addMonths(monthISO: string, delta: number): string {
+  const y = Number(monthISO.slice(0, 4));
+  const m = Number(monthISO.slice(5, 7)) - 1 + delta;
+  const d = new Date(Date.UTC(y, m, 1));
+  return d.toISOString().slice(0, 7);
+}

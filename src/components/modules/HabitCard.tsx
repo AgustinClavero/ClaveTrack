@@ -60,7 +60,7 @@ export function HabitCard({ habit }: { habit: Habit }) {
   const max = Math.max(h.target ?? 0, ...(h.history ?? []).map((x) => x.value), 1);
 
   return (
-    <article className={`card habit-cardx${h.done ? " done" : ""}`}>
+    <article className={`card habit-cardx${h.done ? " done" : ""}`} data-cat={h.category}>
       <header className="hc-head">
         <div className="hc-ring">
           <Ring size={56} stroke={7} value={pct} color="var(--ink)" track="var(--surface-2)" centerFontSize={20}>
