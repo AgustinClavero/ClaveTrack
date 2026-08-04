@@ -1,0 +1,17 @@
+-- ============================================================
+-- Seed demo de ClaveTrack. Ejecutar con un usuario ya creado.
+-- Reemplazá :uid por el UUID de auth.users antes de correr,
+-- o adaptalo a tu flujo de siembra.
+-- ============================================================
+-- Ejemplo de alimentos base (por 100 g salvo indicado):
+-- insert into foods (user_id, name, base, kcal, protein_g, carbs_g, fat_g, fiber_g) values
+--   (:uid, 'Avena', '100g', 380, 13, 67, 7, 10),
+--   (:uid, 'Pechuga de pollo', '100g', 165, 31, 0, 3.6, 0),
+--   (:uid, 'Arroz integral', '100g', 128, 2.7, 27, 1, 1.8),
+--   (:uid, 'Banana', 'unidad', 105, 1.3, 27, 0.4, 3.1),
+--   (:uid, 'Yogur griego', '100g', 88, 9, 4, 5, 0),
+--   (:uid, 'Leche descremada', '100ml', 38, 3.4, 5, 0.1, 0);
+
+-- Objetivo nutricional inicial (plan hacia 80 kg):
+-- insert into nutrition_goals (user_id, kcal, protein_g, carbs_g, fat_g, water_ml)
+--   values (:uid, 1950, 140, 200, 65, 2500);
