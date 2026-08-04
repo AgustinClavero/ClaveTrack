@@ -4142,3 +4142,422 @@ svg.line {
   color: var(--text-2);
   font-weight: 600;
 }
+
+/* ============================================================
+   CARDS DE HABITO · ACTIVIDAD · AJUSTES POR CATEGORIA
+   ============================================================ */
+
+/* Grid de habitos: todas las cards a la misma altura por fila. */
+.habit-grid,
+.hset-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sp-3);
+  align-items: stretch;
+}
+.cat-habits {
+  display: flex;
+  flex-direction: column;
+}
+
+.habit-cardx {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  height: 100%;
+}
+.habit-cardx.done {
+  border: 1.5px solid var(--ink);
+}
+.hc-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.hc-ring {
+  flex: 0 0 auto;
+}
+.hc-id {
+  flex: 1;
+  min-width: 0;
+}
+.hc-id h3 {
+  margin: 0;
+  font-size: var(--fs-md);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.hc-id p {
+  margin: 2px 0 0;
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  font-weight: 700;
+}
+.hc-id .of {
+  font-weight: 600;
+  color: var(--muted);
+}
+.hc-badge {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-pill);
+  background: var(--ink);
+  color: var(--ink-contrast);
+}
+
+/* Mini grafico de 7 dias contra el objetivo */
+.hc-spark {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 40px;
+  padding: var(--sp-2) 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.hc-bar {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  height: 100%;
+  background: var(--surface-2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.hc-bar i {
+  display: block;
+  width: 100%;
+  background: var(--muted);
+  border-radius: 3px;
+}
+.hc-bar.on i {
+  background: var(--ink);
+}
+
+.hc-foot {
+  margin-top: auto;
+}
+.stepper-mini.wide {
+  width: 100%;
+  justify-content: space-between;
+  padding: 4px;
+  background: var(--surface-2);
+  border-radius: var(--r-pill);
+}
+.stepper-mini.wide button {
+  background: var(--surface);
+}
+.stepper-mini.wide span {
+  flex: 1;
+}
+.hc-toggle {
+  width: 100%;
+  min-height: 44px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease);
+}
+.hc-toggle:hover {
+  border-color: var(--ink);
+}
+.hc-toggle.on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--ink-contrast);
+}
+
+/* ---------- Actividad ---------- */
+.wk-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+}
+.wk-opt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: var(--sp-3) var(--sp-1);
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  cursor: pointer;
+}
+.wk-opt span {
+  font-size: 22px;
+}
+.wk-opt.on {
+  border-color: var(--ink);
+  background: var(--surface-2);
+}
+.wk-burn {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  margin: var(--sp-4) 0;
+  background: var(--surface-2);
+  border-radius: var(--r-md);
+}
+.wk-fire {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  border-radius: var(--r-md);
+  font-size: var(--fs-xl);
+}
+.wk-burn b {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--fs-2xl);
+  font-weight: 800;
+  letter-spacing: var(--tracking-tight);
+  line-height: 1;
+}
+.wk-burn small {
+  grid-column: 1 / -1;
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  font-weight: 600;
+}
+
+.wk-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+}
+.wk-emoji {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  border-radius: var(--r-sm);
+  font-size: var(--fs-lg);
+}
+.wk-main {
+  flex: 1;
+  min-width: 0;
+}
+.wk-top {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+}
+.wk-top .name {
+  font-size: var(--fs-md);
+  font-weight: 700;
+}
+.wk-top .time {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+.wk-detail {
+  margin-top: 2px;
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  font-weight: 600;
+}
+.wk-kcal {
+  text-align: right;
+  flex: 0 0 auto;
+}
+.wk-kcal b {
+  display: block;
+  font-size: var(--fs-md);
+  font-weight: 800;
+  letter-spacing: var(--tracking-tight);
+}
+.wk-kcal small {
+  font-size: 10px;
+  color: var(--text-2);
+  font-weight: 700;
+}
+
+/* ---------- Sheet de habitos ---------- */
+.hs-group {
+  margin-bottom: var(--sp-4);
+}
+.hs-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
+.hs-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--surface-2);
+  border-radius: var(--r-md);
+}
+.hs-row.done {
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1.5px var(--ink);
+}
+.hs-e {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  border-radius: var(--r-pill);
+}
+.hs-n {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+}
+.hs-n small {
+  display: block;
+  margin-top: 1px;
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  font-weight: 600;
+}
+.hs-check {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  color: transparent;
+  cursor: pointer;
+}
+.hs-check.on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--ink-contrast);
+}
+
+/* ---------- Ajustes: cards de habito ---------- */
+.hset-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  height: 100%;
+}
+.hsc-top {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.hsc-id {
+  flex: 1;
+  min-width: 0;
+}
+.hsc-id h4 {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  margin: 0;
+  font-size: var(--fs-md);
+  font-weight: 800;
+}
+.hsc-id p {
+  margin: 2px 0 0;
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  font-weight: 600;
+}
+.hsc-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: auto;
+}
+.hsc-actions .head-action {
+  flex: 1;
+}
+.cat-picker {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--sp-2);
+}
+.cat-opt {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 48px;
+  padding: 0 var(--sp-3);
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  cursor: pointer;
+}
+.cat-opt.on {
+  border-color: var(--ink);
+  background: var(--surface-2);
+}
+.hedit {
+  border: 1.5px solid var(--ink);
+}
+
+/* ============================================================
+   RESPONSIVE — grids que igualan altura por fila
+   ============================================================ */
+@media (min-width: 560px) {
+  .habit-grid,
+  .hset-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .cat-picker {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (min-width: 768px) {
+  .cat-habits {
+    grid-column: 1 / -1;
+  }
+  .wk-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .habit-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .hset-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .cat-habits {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 1400px) {
+  .habit-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}

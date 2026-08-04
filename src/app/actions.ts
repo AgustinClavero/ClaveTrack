@@ -4,3 +4,4 @@ export * from "./actions/habits";
 export * from "./actions/checkin";
 export * from "./actions/nutrition";
 export * from "./actions/profile";
+export * from "./actions/activity";

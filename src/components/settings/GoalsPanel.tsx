@@ -36,13 +36,14 @@ export function GoalsPanel({
   });
 
   const year = new Date().getFullYear();
-  const canCalc =
-    profile?.sex != null && profile?.birth_year != null && profile?.height_cm != null && lastWeightKg != null;
+  const birth = profile?.birth_date ?? (profile?.birth_year ? `${profile.birth_year}-01-01` : null);
+  const canCalc = profile?.sex != null && birth != null && profile?.height_cm != null && lastWeightKg != null;
+  const age = birth ? Math.max(10, year - Number(birth.slice(0, 4))) : 30;
 
   const plan = canCalc
     ? computeMacroPlan({
         sex: profile!.sex as "male" | "female",
-        age: year - profile!.birth_year!,
+        age,
         heightCm: Number(profile!.height_cm),
         weightKg: lastWeightKg!,
         activity: (profile!.activity_level as ActivityLevel) ?? "moderate",
@@ -79,7 +80,7 @@ export function GoalsPanel({
           mode === "auto" && canCalc
             ? {
                 sex: profile!.sex as "male" | "female",
-                age: year - profile!.birth_year!,
+                age,
                 heightCm: Number(profile!.height_cm),
                 weightKg: lastWeightKg!,
                 activity: (profile!.activity_level as ActivityLevel) ?? "moderate",

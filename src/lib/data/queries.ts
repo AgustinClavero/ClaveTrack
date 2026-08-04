@@ -18,7 +18,7 @@ import {
 } from "@/lib/calculations/scoring";
 import { computeAchievements, type Achievement } from "@/lib/calculations/insights";
 import { dayWindow, recentDays, type DayCell } from "@/lib/date";
-import type { Habit, Meal, MealType, NutritionGoals, WeightPoint } from "@/types";
+import type { Habit, HabitCategory, Meal, MealType, NutritionGoals, WeightPoint } from "@/types";
 
 const MEAL_EMOJI: Record<string, string> = {
   desayuno: "🥣",
@@ -154,7 +154,10 @@ type HabitRow = {
   emoji: string | null;
   is_key: boolean | null;
   display_order: number | null;
+  category?: string | null;
 };
+
+const HABIT_COLS = "id, name, kind, target_value, unit, emoji, is_key, display_order, category";
 
 function mapHabits(
   rows: HabitRow[],
@@ -173,6 +176,7 @@ function mapHabits(
       unit: h.unit ?? "",
       emoji: iconFor(h.name, h.emoji),
       isKey: h.is_key ?? false,
+      category: (h.category ?? "routine") as Habit["category"],
     };
   });
 }
@@ -232,7 +236,7 @@ export async function getDashboard(): Promise<Dashboard | null> {
     supabase.from("meals").select("id, meal_type, eaten_at, planned, meal_items(*)").eq("user_id", ctx.userId).eq("log_date", date).order("created_at"),
     supabase
       .from("habits")
-      .select("id, name, kind, target_value, unit, emoji, is_key, display_order")
+      .select(HABIT_COLS)
       .eq("user_id", ctx.userId)
       .eq("active", true)
       .order("display_order")
@@ -451,26 +455,132 @@ export async function getMealDetail(mealId: string): Promise<MealDetail | null> 
 // Hábitos
 // ============================================================
 
-export async function getHabitsDay(): Promise<{ date: string; habits: Habit[]; threshold: number } | null> {
+/**
+ * Hábitos con el historial de los últimos 7 días para los mini gráficos.
+ * `categories` filtra por página temática (null = todas).
+ */
+export async function getHabitsDay(
+  categories?: HabitCategory[]
+): Promise<{ date: string; habits: Habit[]; threshold: number; days: DayCell[] } | null> {
   const ctx = await getUserContext();
   if (!ctx) return null;
   const supabase = getServerClient();
+  const week = recentDays(7, ctx.timezone);
+  const from = week[0].date;
+
+  let habitsQ = supabase
+    .from("habits")
+    .select(HABIT_COLS)
+    .eq("user_id", ctx.userId)
+    .eq("active", true)
+    .order("display_order")
+    .order("created_at");
+  if (categories?.length) habitsQ = habitsQ.in("category", categories);
 
   const [habitsRes, entriesRes] = await Promise.all([
+    habitsQ,
     supabase
-      .from("habits")
-      .select("id, name, kind, target_value, unit, emoji, is_key, display_order")
+      .from("habit_entries")
+      .select("habit_id, done, value, log_date")
       .eq("user_id", ctx.userId)
-      .eq("active", true)
-      .order("display_order")
-      .order("created_at"),
-    supabase.from("habit_entries").select("habit_id, done, value").eq("user_id", ctx.userId).eq("log_date", ctx.today),
+      .gte("log_date", from)
+      .lte("log_date", ctx.today),
   ]);
+
+  const all = entriesRes.data ?? [];
+  const today = all.filter((e) => e.log_date === ctx.today);
+  const habits = mapHabits((habitsRes.data ?? []) as HabitRow[], today);
+
+  // Historial por hábito, alineado a los 7 días (rellena huecos con 0).
+  const byHabit = new Map<string, Map<string, { value: number; done: boolean }>>();
+  all.forEach((e) => {
+    if (!byHabit.has(e.habit_id)) byHabit.set(e.habit_id, new Map());
+    byHabit.get(e.habit_id)!.set(e.log_date, { value: Number(e.value ?? 0), done: e.done ?? false });
+  });
+  habits.forEach((h) => {
+    const m = byHabit.get(h.id);
+    h.history = week.map((d) => ({
+      date: d.date,
+      value: m?.get(d.date)?.value ?? 0,
+      done: m?.get(d.date)?.done ?? false,
+    }));
+  });
+
+  return { date: ctx.today, habits, threshold: ctx.streakThreshold, days: week };
+}
+
+// ============================================================
+// Actividad
+// ============================================================
+
+export interface WorkoutRow {
+  id: string;
+  kind: string;
+  minutes: number;
+  intensity: string;
+  distanceKm: number | null;
+  steps: number | null;
+  kcal: number;
+  note: string | null;
+  date: string;
+}
+
+export interface ActivityDay {
+  date: string;
+  habits: Habit[];
+  days: DayCell[];
+  today: WorkoutRow[];
+  week: WorkoutRow[];
+  weightKg: number;
+  heightCm: number | null;
+}
+
+export async function getActivityDay(): Promise<ActivityDay | null> {
+  const ctx = await getUserContext();
+  if (!ctx) return null;
+  const supabase = getServerClient();
+  const week = recentDays(7, ctx.timezone);
+  const from = week[0].date;
+
+  const [habitsData, workoutsRes, weightRes] = await Promise.all([
+    getHabitsDay(["activity"]),
+    supabase
+      .from("workouts")
+      .select("*")
+      .eq("user_id", ctx.userId)
+      .gte("log_date", from)
+      .lte("log_date", ctx.today)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("body_entries")
+      .select("weight_kg")
+      .eq("user_id", ctx.userId)
+      .not("weight_kg", "is", null)
+      .order("log_date", { ascending: false })
+      .limit(1),
+  ]);
+
+  const map = (w: NonNullable<typeof workoutsRes.data>[number]): WorkoutRow => ({
+    id: w.id,
+    kind: w.kind,
+    minutes: w.minutes,
+    intensity: w.intensity,
+    distanceKm: w.distance_km != null ? Number(w.distance_km) : null,
+    steps: w.steps,
+    kcal: w.kcal,
+    note: w.note,
+    date: w.log_date,
+  });
+  const all = (workoutsRes.data ?? []).map(map);
 
   return {
     date: ctx.today,
-    habits: mapHabits((habitsRes.data ?? []) as HabitRow[], entriesRes.data ?? []),
-    threshold: ctx.streakThreshold,
+    habits: habitsData?.habits ?? [],
+    days: week,
+    today: all.filter((w) => w.date === ctx.today),
+    week: all,
+    weightKg: weightRes.data?.[0]?.weight_kg != null ? Number(weightRes.data[0].weight_kg) : 0,
+    heightCm: ctx.profile?.height_cm != null ? Number(ctx.profile.height_cm) : null,
   };
 }
 
@@ -582,6 +692,8 @@ export interface ShellData {
   streak: number;
   checkin: Checkin;
   lastWeightKg: number | null;
+  habits: Habit[];
+  heightCm: number | null;
 }
 
 export async function getShellData(): Promise<ShellData | null> {
@@ -589,7 +701,7 @@ export async function getShellData(): Promise<ShellData | null> {
   if (!ctx) return null;
   const supabase = getServerClient();
 
-  const [logRes, lastWeightRes, history] = await Promise.all([
+  const [logRes, lastWeightRes, history, habitsRes, entriesRes] = await Promise.all([
     supabase
       .from("daily_logs")
       .select("mood, energy, sleep_quality, hunger, focus_note, checkin_done_at, water_ml")
@@ -604,6 +716,14 @@ export async function getShellData(): Promise<ShellData | null> {
       .order("log_date", { ascending: false })
       .limit(1),
     getScoreHistory(ctx),
+    supabase
+      .from("habits")
+      .select(HABIT_COLS)
+      .eq("user_id", ctx.userId)
+      .eq("active", true)
+      .order("display_order")
+      .order("created_at"),
+    supabase.from("habit_entries").select("habit_id, done, value").eq("user_id", ctx.userId).eq("log_date", ctx.today),
   ]);
 
   const scoreByDate = new Map<string, number>();
@@ -624,6 +744,8 @@ export async function getShellData(): Promise<ShellData | null> {
       waterMl: log?.water_ml ?? 0,
     },
     lastWeightKg,
+    habits: mapHabits((habitsRes.data ?? []) as HabitRow[], entriesRes.data ?? []),
+    heightCm: ctx.profile?.height_cm != null ? Number(ctx.profile.height_cm) : null,
   };
 }
 
@@ -653,7 +775,7 @@ export async function getSettingsData(): Promise<SettingsData | null> {
       .limit(1),
     supabase
       .from("habits")
-      .select("id, name, kind, target_value, unit, emoji, is_key, display_order")
+      .select(HABIT_COLS)
       .eq("user_id", ctx.userId)
       .eq("active", true)
       .order("display_order")

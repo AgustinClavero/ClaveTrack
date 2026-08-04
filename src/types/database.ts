@@ -304,6 +304,7 @@ export type Database = {
       habits: {
         Row: {
           active: boolean | null
+          category: string
           created_at: string | null
           display_order: number | null
           emoji: string | null
@@ -319,6 +320,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean | null
+          category?: string
           created_at?: string | null
           display_order?: number | null
           emoji?: string | null
@@ -334,6 +336,7 @@ export type Database = {
         }
         Update: {
           active?: boolean | null
+          category?: string
           created_at?: string | null
           display_order?: number | null
           emoji?: string | null
@@ -506,6 +509,7 @@ export type Database = {
         Row: {
           activity_level: string | null
           avatar_url: string | null
+          birth_date: string | null
           birth_year: number | null
           created_at: string | null
           display_name: string | null
@@ -520,6 +524,7 @@ export type Database = {
         Insert: {
           activity_level?: string | null
           avatar_url?: string | null
+          birth_date?: string | null
           birth_year?: number | null
           created_at?: string | null
           display_name?: string | null
@@ -534,6 +539,7 @@ export type Database = {
         Update: {
           activity_level?: string | null
           avatar_url?: string | null
+          birth_date?: string | null
           birth_year?: number | null
           created_at?: string | null
           display_name?: string | null
@@ -586,6 +592,51 @@ export type Database = {
           w_sleep?: number | null
           w_study?: number | null
           w_tasks?: number | null
+        }
+        Relationships: []
+      }
+      workouts: {
+        Row: {
+          created_at: string | null
+          distance_km: number | null
+          id: string
+          intensity: string
+          kcal: number
+          kind: string
+          log_date: string
+          minutes: number
+          note: string | null
+          steps: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          distance_km?: number | null
+          id?: string
+          intensity?: string
+          kcal?: number
+          kind: string
+          log_date: string
+          minutes: number
+          note?: string | null
+          steps?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          distance_km?: number | null
+          id?: string
+          intensity?: string
+          kcal?: number
+          kind?: string
+          log_date?: string
+          minutes?: number
+          note?: string | null
+          steps?: number | null
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }

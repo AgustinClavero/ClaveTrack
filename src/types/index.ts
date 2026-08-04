@@ -56,6 +56,8 @@ export interface NutritionGoals {
 }
 
 export type HabitKind = "boolean" | "numeric" | "duration" | "weekly";
+/** Página temática donde se registra el hábito. */
+export type HabitCategory = "nutrition" | "activity" | "routine" | "mind";
 
 export interface Habit {
   id: UUID;
@@ -68,6 +70,9 @@ export interface Habit {
   unit: string;
   emoji: string;
   isKey: boolean;
+  category: HabitCategory;
+  /** Últimos 7 días para el mini gráfico (más viejo → más nuevo). */
+  history?: { date: string; value: number; done: boolean }[];
 }
 
 export interface WeightPoint {

@@ -22,6 +22,7 @@ export const habitValueSchema = z.object({
 });
 
 export const habitKind = z.enum(["boolean", "numeric", "duration", "weekly"]);
+export const habitCategory = z.enum(["nutrition", "activity", "routine", "mind"]);
 
 export const habitUpsertSchema = z.object({
   id: uuid.optional(),
@@ -31,6 +32,29 @@ export const habitUpsertSchema = z.object({
   unit: z.string().trim().max(20).nullable().optional(),
   emoji: z.string().trim().max(8).nullable().optional(),
   isKey: z.boolean().optional(),
+  category: habitCategory.optional(),
+});
+
+// ---------- Actividad ----------
+export const workoutKind = z.enum([
+  "caminata",
+  "running",
+  "gimnasio",
+  "ciclismo",
+  "futbol",
+  "natacion",
+  "boxeo",
+  "yoga",
+  "otro",
+]);
+
+export const workoutSchema = z.object({
+  kind: workoutKind,
+  minutes: z.number().int().min(1).max(600),
+  intensity: z.enum(["suave", "moderada", "fuerte"]),
+  distanceKm: z.number().min(0).max(500).nullable().optional(),
+  steps: z.number().int().min(0).max(200000).nullable().optional(),
+  note: z.string().trim().max(200).optional(),
 });
 
 // ---------- Check-in ----------
@@ -120,6 +144,8 @@ export const profileSchema = z.object({
   timezone: z.string().trim().min(1).max(60).optional(),
   targetWeightKg: z.number().min(20).max(400).nullable().optional(),
   sex: z.enum(["male", "female"]).nullable().optional(),
+  /** ISO yyyy-mm-dd. */
+  birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   birthYear: z.number().int().min(1900).max(2100).nullable().optional(),
   heightCm: z.number().min(100).max(250).nullable().optional(),
   activityLevel: z.enum(["sedentary", "light", "moderate", "active", "athlete"]).nullable().optional(),
@@ -144,6 +170,7 @@ export const userSettingsSchema = z.object({
 export const onboardingSchema = z.object({
   profile: z.object({
     sex: z.enum(["male", "female"]),
+    birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     birthYear: z.number().int().min(1900).max(2100),
     heightCm: z.number().min(100).max(250),
     activityLevel: z.enum(["sedentary", "light", "moderate", "active", "athlete"]),
@@ -161,6 +188,7 @@ export const onboardingSchema = z.object({
         unit: z.string().trim().max(20).nullable(),
         emoji: z.string().trim().max(8).nullable(),
         isKey: z.boolean(),
+        category: habitCategory,
       })
     )
     .min(1)

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Settings } from "lucide-react";
-import { getNutritionDay, MEAL_LABEL } from "@/lib/data/queries";
+import { getNutritionDay, getHabitsDay, MEAL_LABEL } from "@/lib/data/queries";
 import { mealTotals } from "@/lib/calculations/macros";
 import { nf } from "@/lib/utils";
 import { Ring } from "@/components/ui/Ring";
@@ -9,11 +9,12 @@ import { MacroCard } from "@/components/modules/MacroCard";
 import { MealRow } from "@/components/modules/MealRow";
 import { AddMealButton } from "@/components/modules/AddMealButton";
 import { WaterTracker } from "@/components/modules/WaterTracker";
+import { HabitCard } from "@/components/modules/HabitCard";
 
 export const dynamic = "force-dynamic";
 
 export default async function NutritionPage() {
-  const d = await getNutritionDay();
+  const [d, habitsData] = await Promise.all([getNutritionDay(), getHabitsDay(["nutrition"])]);
   if (!d) redirect("/login");
   if (!d.onboarded) redirect("/onboarding");
 
@@ -58,6 +59,22 @@ export default async function NutritionPage() {
         </div>
 
         <WaterTracker waterMl={d.waterMl} goalMl={goals.waterMl} />
+
+        {habitsData && habitsData.habits.length > 0 && (
+          <div className="cat-habits">
+            <div className="sec-head">
+              <span className="eyebrow">Hábitos de alimentación</span>
+              <Link href="/settings" className="dc-link">
+                Gestionar
+              </Link>
+            </div>
+            <div className="habit-grid">
+              {habitsData.habits.map((h) => (
+                <HabitCard key={h.id} habit={h} />
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="nut-meals">
           <div className="sec-head">

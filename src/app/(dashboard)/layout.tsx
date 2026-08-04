@@ -5,6 +5,8 @@ import { RegisterSheet } from "@/components/shell/RegisterSheet";
 import { CheckinSheet } from "@/components/shell/CheckinSheet";
 import { MealSheet } from "@/components/modules/MealSheet";
 import { WeightSheet } from "@/components/modules/WeightSheet";
+import { WorkoutSheet } from "@/components/modules/WorkoutSheet";
+import { HabitSheet } from "@/components/modules/HabitSheet";
 import { MobileHeader } from "@/components/shell/MobileHeader";
 import { getShellData } from "@/lib/data/queries";
 
@@ -24,6 +26,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <CheckinSheet checkin={shell.checkin} />
       <MealSheet />
       <WeightSheet current={shell.lastWeightKg} />
+      <WorkoutSheet weightKg={shell.lastWeightKg ?? 0} heightCm={shell.heightCm} />
+      <HabitSheet habits={shell.habits} />
     </div>
   );
 }

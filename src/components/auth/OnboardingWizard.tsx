@@ -13,7 +13,7 @@ import {
   type GoalPreset,
   type Sex,
 } from "@/lib/calculations/tdee";
-import type { HabitKind } from "@/types";
+import type { HabitCategory, HabitKind } from "@/types";
 
 function Stepper({
   label,
@@ -106,26 +106,37 @@ interface HabitDef {
   name: string;
   emoji: string;
   kind: HabitKind;
+  category: HabitCategory;
   isKey?: boolean;
   target?: { unit: string; step: number; decimals?: number; suggested: number | "water" };
   supps?: boolean;
 }
 
 const HABITS: HabitDef[] = [
-  { id: "agua", name: "Beber agua", emoji: "💧", kind: "numeric", isKey: true, target: { unit: "L", step: 0.1, decimals: 1, suggested: "water" } },
-  { id: "comidas", name: "Registrar comidas", emoji: "🍽", kind: "boolean" },
-  { id: "planificar", name: "Planificar el día", emoji: "🗓", kind: "boolean" },
-  { id: "suplementos", name: "Suplementos", emoji: "💊", kind: "boolean", supps: true },
-  { id: "caminar", name: "Caminar", emoji: "🚶", kind: "numeric", isKey: true, target: { unit: "pasos", step: 500, suggested: 8000 } },
-  { id: "entrenar", name: "Entrenar", emoji: "🏋️", kind: "weekly", target: { unit: "x/sem", step: 1, suggested: 4 } },
-  { id: "dormir", name: "Dormir", emoji: "😴", kind: "numeric", isKey: true, target: { unit: "h", step: 0.5, decimals: 1, suggested: 7.5 } },
-  { id: "leer", name: "Leer", emoji: "📚", kind: "duration", target: { unit: "min", step: 5, suggested: 20 } },
-  { id: "estirar", name: "Estirar", emoji: "🧘", kind: "duration", target: { unit: "min", step: 5, suggested: 10 } },
-  { id: "meditar", name: "Meditar", emoji: "🧠", kind: "duration", target: { unit: "min", step: 5, suggested: 10 } },
-  { id: "sinazucar", name: "Sin azúcar", emoji: "🚫", kind: "boolean" },
+  { category: "nutrition", id: "agua", name: "Beber agua", emoji: "💧", kind: "numeric", isKey: true, target: { unit: "L", step: 0.1, decimals: 1, suggested: "water" } },
+  { category: "nutrition", id: "comidas", name: "Registrar comidas", emoji: "🍽", kind: "boolean" },
+  { category: "routine", id: "planificar", name: "Planificar el día", emoji: "🗓", kind: "boolean" },
+  { category: "nutrition", id: "suplementos", name: "Suplementos", emoji: "💊", kind: "boolean", supps: true },
+  { category: "activity", id: "caminar", name: "Caminar", emoji: "🚶", kind: "numeric", isKey: true, target: { unit: "pasos", step: 500, suggested: 8000 } },
+  { category: "activity", id: "entrenar", name: "Entrenar", emoji: "🏋️", kind: "weekly", target: { unit: "x/sem", step: 1, suggested: 4 } },
+  { category: "routine", id: "dormir", name: "Dormir", emoji: "😴", kind: "numeric", isKey: true, target: { unit: "h", step: 0.5, decimals: 1, suggested: 7.5 } },
+  { category: "routine", id: "leer", name: "Leer", emoji: "📚", kind: "duration", target: { unit: "min", step: 5, suggested: 20 } },
+  { category: "activity", id: "estirar", name: "Estirar", emoji: "🧘", kind: "duration", target: { unit: "min", step: 5, suggested: 10 } },
+  { category: "mind", id: "meditar", name: "Meditar", emoji: "🧠", kind: "duration", target: { unit: "min", step: 5, suggested: 10 } },
+  { category: "nutrition", id: "sinazucar", name: "Sin azúcar", emoji: "🚫", kind: "boolean" },
 ];
 
 const STEPS = ["Sobre vos", "Tu peso", "Tu plan", "Tus hábitos", "Objetivos", "Listo"];
+
+/** Edad cumplida a partir de una fecha ISO. */
+function ageFrom(iso: string): number {
+  const b = new Date(iso + "T00:00:00");
+  const now = new Date();
+  let a = now.getFullYear() - b.getFullYear();
+  const m = now.getMonth() - b.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < b.getDate())) a--;
+  return Math.max(0, a);
+}
 
 export function OnboardingWizard() {
   const router = useRouter();
@@ -136,7 +147,9 @@ export function OnboardingWizard() {
   // Paso 0 — datos personales (habilitan la calculadora)
   const currentYear = new Date().getFullYear();
   const [sex, setSex] = useState<Sex>("male");
-  const [birthYear, setBirthYear] = useState(currentYear - 30);
+  const [birthDate, setBirthDate] = useState(`${currentYear - 30}-01-01`);
+  const birthYear = Number(birthDate.slice(0, 4));
+  const age = ageFrom(birthDate);
   const [heightCm, setHeightCm] = useState(175);
   const [activity, setActivity] = useState<ActivityLevel>("moderate");
 
@@ -163,13 +176,13 @@ export function OnboardingWizard() {
     () =>
       computeMacroPlan({
         sex,
-        age: currentYear - birthYear,
+        age,
         heightCm,
         weightKg: weight,
         activity,
         preset,
       }),
-    [sex, birthYear, heightCm, weight, activity, preset, currentYear]
+    [sex, age, heightCm, weight, activity, preset]
   );
 
   function applyPlan() {
@@ -213,6 +226,7 @@ export function OnboardingWizard() {
       unit: string | null;
       emoji: string | null;
       isKey: boolean;
+      category: HabitCategory;
     }[] = [];
 
     selectedHabits.forEach((h) => {
@@ -226,6 +240,7 @@ export function OnboardingWizard() {
             unit: null,
             emoji: "💊",
             isKey: false,
+            category: "nutrition",
           })
         );
         return;
@@ -238,6 +253,7 @@ export function OnboardingWizard() {
         unit: h.target?.unit ?? null,
         emoji: h.emoji,
         isKey: !!h.isKey,
+        category: h.category,
       });
     });
     return rows;
@@ -263,6 +279,7 @@ export function OnboardingWizard() {
       const res = await completeOnboarding({
         profile: {
           sex,
+          birthDate,
           birthYear,
           heightCm,
           activityLevel: activity,
@@ -278,7 +295,7 @@ export function OnboardingWizard() {
           mode,
           calcInputs:
             mode === "auto"
-              ? { sex, age: currentYear - birthYear, heightCm, weightKg: weight, activity, preset }
+              ? { sex, age, heightCm, weightKg: weight, activity, preset }
               : null,
         },
         habits,
@@ -326,16 +343,20 @@ export function OnboardingWizard() {
               </div>
             </div>
 
-            <Stepper
-              label="Año de nacimiento"
-              value={birthYear}
-              unit={`· ${currentYear - birthYear} años`}
-              step={1}
-              min={1900}
-              editable
-              plain
-              onChange={setBirthYear}
-            />
+            <label className="field">
+              <span>Fecha de nacimiento</span>
+              <span className="input-wrap">
+                <input
+                  className="ci-input"
+                  type="date"
+                  value={birthDate}
+                  max={`${currentYear - 10}-12-31`}
+                  min={`${currentYear - 100}-01-01`}
+                  onChange={(e) => e.target.value && setBirthDate(e.target.value)}
+                />
+              </span>
+              <small className="per-kg">{age} años</small>
+            </label>
             <Stepper label="Altura" value={heightCm} unit="cm" step={1} min={100} editable onChange={setHeightCm} />
 
             <div className="field">

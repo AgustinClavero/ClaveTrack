@@ -11,6 +11,8 @@ export function RegisterSheet() {
 
   const ACTIONS = [
     { icon: "🍽", name: "Comida", go: () => openSheet("meal") },
+    { icon: "🏃", name: "Actividad", go: () => openSheet("workout") },
+    { icon: "✅", name: "Hábito", go: () => openSheet("habit") },
     { icon: "⚖️", name: "Peso", go: () => openSheet("weight") },
     { icon: "📋", name: "Check-in", go: () => openSheet("checkin") },
   ];
@@ -25,7 +27,7 @@ export function RegisterSheet() {
           </button>
         ))}
       </div>
-      <p className="sheet-note">Entrenos, tareas y pomodoro llegan con el módulo Trabajo.</p>
+      <p className="sheet-note">Tareas y pomodoro llegan con el módulo Trabajo.</p>
     </Sheet>
   );
 }

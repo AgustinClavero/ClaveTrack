@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Plus } from "lucide-react";
-import { NAV_MAIN, NAV_SECONDARY } from "./nav-items";
+import { NAV_FULL, NAV_SECONDARY } from "./nav-items";
 import { useUIStore } from "@/lib/store";
 import { LogoutButton } from "./LogoutButton";
 import { ThemeToggle } from "./ThemeToggle";
@@ -21,7 +21,7 @@ export function Sidebar({ streak }: { streak: number }) {
       </div>
 
       <nav className="side-nav">
-        {NAV_MAIN.map((n) => (
+        {NAV_FULL.map((n) => (
           <Link key={n.href} href={n.href} className={`side-link${pathname === n.href ? " active" : ""}`}>
             <span className="ic">
               <n.Icon size={19} strokeWidth={2} />

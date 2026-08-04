@@ -18,6 +18,16 @@ const TIMEZONES = [
 
 const num = (v: string) => Number(String(v).replace(",", ".")) || 0;
 
+/** Edad cumplida a partir de una fecha ISO. */
+function ageFrom(iso: string): number {
+  const b = new Date(iso + "T00:00:00");
+  const now = new Date();
+  let a = now.getFullYear() - b.getFullYear();
+  const m = now.getMonth() - b.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < b.getDate())) a--;
+  return Math.max(0, a);
+}
+
 export function ProfilePanel({ profile }: { profile: SettingsData["profile"] }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -27,7 +37,7 @@ export function ProfilePanel({ profile }: { profile: SettingsData["profile"] }) 
     displayName: profile?.display_name ?? "",
     timezone: profile?.timezone ?? TIMEZONES[0],
     sex: (profile?.sex as "male" | "female" | null) ?? null,
-    birthYear: profile?.birth_year ? String(profile.birth_year) : "",
+    birthDate: profile?.birth_date ?? (profile?.birth_year ? `${profile.birth_year}-01-01` : ""),
     heightCm: profile?.height_cm ? String(profile.height_cm) : "",
     activityLevel: (profile?.activity_level as ActivityLevel | null) ?? null,
     targetWeightKg: profile?.target_weight_kg ? String(profile.target_weight_kg) : "",
@@ -40,7 +50,7 @@ export function ProfilePanel({ profile }: { profile: SettingsData["profile"] }) 
         displayName: f.displayName,
         timezone: f.timezone,
         sex: f.sex,
-        birthYear: f.birthYear ? Math.round(num(f.birthYear)) : null,
+        birthDate: f.birthDate || null,
         heightCm: f.heightCm ? num(f.heightCm) : null,
         activityLevel: f.activityLevel,
         targetWeightKg: f.targetWeightKg ? num(f.targetWeightKg) : null,
@@ -61,8 +71,16 @@ export function ProfilePanel({ profile }: { profile: SettingsData["profile"] }) 
           <input className="ci-input" value={f.displayName} onChange={(e) => setF({ ...f, displayName: e.target.value })} />
         </label>
         <label className="field">
-          <span>Año de nacimiento</span>
-          <input className="ci-input" inputMode="numeric" value={f.birthYear} onChange={(e) => setF({ ...f, birthYear: e.target.value })} />
+          <span>Fecha de nacimiento</span>
+          <input
+            className="ci-input"
+            type="date"
+            value={f.birthDate}
+            max={`${new Date().getFullYear() - 10}-12-31`}
+            min={`${new Date().getFullYear() - 100}-01-01`}
+            onChange={(e) => setF({ ...f, birthDate: e.target.value })}
+          />
+          {f.birthDate && <small className="per-kg">{ageFrom(f.birthDate)} años</small>}
         </label>
         <label className="field">
           <span>Altura (cm)</span>

@@ -20,7 +20,11 @@ export async function updateProfile(input: unknown): Promise<ActionResult> {
   if (p.timezone !== undefined) row.timezone = p.timezone;
   if (p.targetWeightKg !== undefined) row.target_weight_kg = p.targetWeightKg;
   if (p.sex !== undefined) row.sex = p.sex;
-  if (p.birthYear !== undefined) row.birth_year = p.birthYear;
+  if (p.birthDate !== undefined) {
+    row.birth_date = p.birthDate;
+    // birth_year queda derivado para no tener dos fuentes de verdad.
+    row.birth_year = p.birthDate ? Number(p.birthDate.slice(0, 4)) : null;
+  } else if (p.birthYear !== undefined) row.birth_year = p.birthYear;
   if (p.heightCm !== undefined) row.height_cm = p.heightCm;
   if (p.activityLevel !== undefined) row.activity_level = p.activityLevel;
 
@@ -82,6 +86,7 @@ export async function completeOnboarding(input: unknown): Promise<ActionResult> 
     {
       id: ctx.userId,
       sex: profile.sex,
+      birth_date: profile.birthDate,
       birth_year: profile.birthYear,
       height_cm: profile.heightCm,
       activity_level: profile.activityLevel,
@@ -119,6 +124,7 @@ export async function completeOnboarding(input: unknown): Promise<ActionResult> 
       unit: h.unit,
       emoji: h.emoji,
       is_key: h.isKey,
+      category: h.category,
       display_order: i,
       active: true,
     })),
