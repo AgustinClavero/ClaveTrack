@@ -55,7 +55,7 @@ export function MealRow({
             <i aria-hidden="true">🍗</i> {nf(protein, 0)}g
           </span>
           <span>
-            <i aria-hidden="true">🌾</i> {nf(carbs, 0)}g
+            <i aria-hidden="true">🍜</i> {nf(carbs, 0)}g
           </span>
           <span>
             <i aria-hidden="true">🥑</i> {nf(fat, 0)}g

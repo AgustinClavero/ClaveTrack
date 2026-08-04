@@ -580,7 +580,7 @@ function QuantityStep({
           <b>{nf(m.protein, 1)} g</b>
         </div>
         <div className="qm">
-          <span>🌾 Carbos</span>
+          <span>🍜 Carbos</span>
           <b>{nf(m.carbs, 1)} g</b>
         </div>
         <div className="qm">

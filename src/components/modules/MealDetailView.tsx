@@ -140,7 +140,7 @@ export function MealDetailView({ meal }: { meal: MealDetail }) {
         <div className="md-macros">
           {[
             { l: "Proteína", v: scaled(t.protein), e: "🍗", c: "var(--red)" },
-            { l: "Carbos", v: scaled(t.carbs), e: "🌾", c: "var(--amber)" },
+            { l: "Carbos", v: scaled(t.carbs), e: "🍜", c: "var(--amber)" },
             { l: "Grasas", v: scaled(t.fat), e: "🥑", c: "var(--blue)" },
           ].map((m) => (
             <div className="md-mcard" key={m.l}>

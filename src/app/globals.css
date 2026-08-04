@@ -5598,3 +5598,76 @@ svg.line {
 .ms-photo-add {
   margin-top: var(--sp-1);
 }
+
+/* ============================================================
+   DECK — carrusel en móvil, grid desplegado en desktop
+   ============================================================ */
+.deck {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+.deck-track {
+  display: flex;
+  gap: var(--sp-4);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  /* Sale del padding lateral de la pantalla para que las páginas lleguen al borde. */
+  margin: 0 calc(var(--sp-5) * -1);
+  padding: 0 var(--sp-5);
+}
+.deck-track::-webkit-scrollbar {
+  display: none;
+}
+.deck-page {
+  flex: 0 0 100%;
+  scroll-snap-align: center;
+  min-width: 0;
+}
+.deck-page > * {
+  height: 100%;
+}
+.deck-dots {
+  display: flex;
+  gap: var(--sp-2);
+  justify-content: center;
+}
+.deck-dot {
+  padding: var(--sp-1) var(--sp-3);
+  min-height: 32px;
+  border: none;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease);
+}
+.deck-dot.on {
+  background: var(--ink);
+  color: var(--ink-contrast);
+}
+
+/* En tablet y desktop no hay carrusel: se ve todo a la vez. */
+@media (min-width: 768px) {
+  .deck {
+    grid-column: 1 / -1;
+  }
+  .deck-track {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    overflow: visible;
+    margin: 0;
+    padding: 0;
+    align-items: stretch;
+  }
+  .deck-page {
+    flex: initial;
+  }
+  .deck-dots {
+    display: none;
+  }
+}

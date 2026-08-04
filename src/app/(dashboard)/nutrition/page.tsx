@@ -11,6 +11,7 @@ import { AddMealButton } from "@/components/modules/AddMealButton";
 import { HabitCard } from "@/components/modules/HabitCard";
 import { PageDate } from "@/components/shell/PageDate";
 import { SupplementCard } from "@/components/modules/SupplementCard";
+import { SwipeDeck } from "@/components/modules/SwipeDeck";
 
 export const dynamic = "force-dynamic";
 
@@ -53,27 +54,33 @@ export default async function NutritionPage() {
           </Ring>
         </div>
 
-        {/* Macros como cards separadas (referencia Cal AI) */}
-        <div className="macro-cards">
-          <MacroCard label="Proteína" value={totals.protein} goal={goals.protein} emoji="🍗" color="var(--red)" tint="var(--red-tint)" />
-          <MacroCard label="Carbos" value={totals.carbs} goal={goals.carbs} emoji="🌾" color="var(--amber)" tint="var(--amber-tint)" />
-          <MacroCard label="Grasa" value={totals.fat} goal={goals.fat} emoji="🥑" color="var(--blue)" tint="var(--blue-tint)" />
-        </div>
-
-        <SupplementCard items={supplements} />
-
-        {otherHabits.length > 0 && (
-          <div className="cat-habits">
-            <div className="sec-head">
-              <span className="eyebrow">Hábitos de alimentación</span>
-            </div>
-            <div className="habit-grid">
-              {otherHabits.map((h) => (
-                <HabitCard key={h.id} habit={h} />
-              ))}
-            </div>
+        {/* Macros, suplementos y hábitos: deslizables en móvil, en grid en desktop */}
+        <SwipeDeck labels={["Macros", "Suplementos", "Hábitos"]}>
+          <div className="macro-cards">
+            <MacroCard label="Proteína" value={totals.protein} goal={goals.protein} emoji="🍗" color="var(--red)" tint="var(--red-tint)" />
+            <MacroCard label="Carbos" value={totals.carbs} goal={goals.carbs} emoji="🍜" color="var(--amber)" tint="var(--amber-tint)" />
+            <MacroCard label="Grasa" value={totals.fat} goal={goals.fat} emoji="🥑" color="var(--blue)" tint="var(--blue-tint)" />
           </div>
-        )}
+
+          <SupplementCard items={supplements} />
+
+          {otherHabits.length > 0 ? (
+            <div className="cat-habits">
+              <div className="habit-grid">
+                {otherHabits.map((h) => (
+                  <HabitCard key={h.id} habit={h} />
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="card empty-card">
+              <p>Sin hábitos de alimentación todavía.</p>
+              <Link className="btn-dark-sm" href="/settings">
+                Agregar hábito
+              </Link>
+            </div>
+          )}
+        </SwipeDeck>
 
         <div className="nut-meals">
           <div className="sec-head">
