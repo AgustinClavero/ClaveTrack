@@ -4,6 +4,7 @@
 // `unitLabel` + `unitGrams` definen cómo se cuenta en la vida real
 // (1 huevo = 50 g, 1 lata = 120 g), sin cambiar la base del cálculo.
 // `state` distingue crudo/cocido en lo que cambia mucho al cocinarse.
+// El favorito es el COCIDO: es como llega al plato y como se pesa.
 // ============================================================
 
 export type FoodCategory =
@@ -63,12 +64,12 @@ export const DEFAULT_FOODS: DefaultFood[] = [
   { name: "Proteína en polvo", category: "proteinas", base: "100g", kcal: 400, protein: 80, carbs: 10, fat: 5, unitLabel: "scoop", unitGrams: 30, favorite: true },
 
   // ---------- 🍚 Carbohidratos ----------
-  { name: "Arroz blanco", category: "carbohidratos", base: "100g", kcal: 358, protein: 7, carbs: 79, fat: 0.6, fiber: 1.3, state: "crudo", favorite: true },
-  { name: "Arroz blanco", category: "carbohidratos", base: "100g", kcal: 130, protein: 2.7, carbs: 28, fat: 0.3, fiber: 0.4, state: "cocido" },
+  { name: "Arroz blanco", category: "carbohidratos", base: "100g", kcal: 358, protein: 7, carbs: 79, fat: 0.6, fiber: 1.3, state: "crudo" },
+  { name: "Arroz blanco", category: "carbohidratos", base: "100g", kcal: 130, protein: 2.7, carbs: 28, fat: 0.3, fiber: 0.4, state: "cocido", favorite: true },
   { name: "Arroz integral", category: "carbohidratos", base: "100g", kcal: 350, protein: 7.5, carbs: 74, fat: 2.7, fiber: 3.5, state: "crudo" },
   { name: "Arroz integral", category: "carbohidratos", base: "100g", kcal: 123, protein: 2.6, carbs: 26, fat: 1, fiber: 1.6, state: "cocido" },
   { name: "Fideos", category: "carbohidratos", base: "100g", kcal: 371, protein: 13, carbs: 75, fat: 1.5, fiber: 3.2, state: "crudo" },
-  { name: "Fideos", category: "carbohidratos", base: "100g", kcal: 158, protein: 5.8, carbs: 31, fat: 0.9, fiber: 1.8, state: "cocido" },
+  { name: "Fideos", category: "carbohidratos", base: "100g", kcal: 158, protein: 5.8, carbs: 31, fat: 0.9, fiber: 1.8, state: "cocido", favorite: true },
   { name: "Papa", category: "carbohidratos", base: "100g", kcal: 87, protein: 1.9, carbs: 20, fat: 0.1, fiber: 1.8, state: "cocido" },
   { name: "Batata", category: "carbohidratos", base: "100g", kcal: 90, protein: 2, carbs: 21, fat: 0.2, fiber: 3.3, state: "cocido" },
   { name: "Avena instantánea", category: "carbohidratos", base: "100g", kcal: 389, protein: 16.9, carbs: 66, fat: 6.9, fiber: 10.6, unitLabel: "cda", unitGrams: 15, favorite: true },
