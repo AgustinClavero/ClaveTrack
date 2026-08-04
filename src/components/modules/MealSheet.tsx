@@ -3,10 +3,18 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Camera, Plus, Trash2, Search, X } from "lucide-react";
+import { ArrowLeft, Camera, Minus, Plus, Search, Star, Trash2, X } from "lucide-react";
 import { useUIStore } from "@/lib/store";
 import { Sheet } from "@/components/shell/Sheet";
-import { searchFoods, logMeal, createFood, type FoodHit } from "@/app/actions";
+import {
+  getFoodPickerData,
+  logMeal,
+  logRecipe,
+  searchFoods,
+  toggleFoodFavorite,
+  type FoodHit,
+  type FoodPickerData,
+} from "@/app/actions";
 import { uploadMealPhoto } from "@/lib/upload";
 import { nf } from "@/lib/utils";
 
@@ -21,13 +29,16 @@ const MEAL_TYPES = [
 
 interface Draft {
   food: FoodHit;
-  quantity: number;
+  /** Siempre en gramos o ml: la unidad es solo una forma de contar. */
+  grams: number;
 }
 
-const BASE_QTY: Record<string, number> = { "100g": 100, "100ml": 100, unidad: 1 };
-const unitOf = (base: string) => (base === "unidad" ? "un" : base === "100ml" ? "ml" : "g");
+/** Macros de una cantidad en gramos (el catálogo está por 100 g). */
+const macrosOf = (f: FoodHit, grams: number) => {
+  const k = grams / 100;
+  return { kcal: f.kcal * k, protein: f.proteinG * k, carbs: f.carbsG * k, fat: f.fatG * k };
+};
 
-/** Sugiere el tipo de comida según la hora local. */
 function suggestMealType(): (typeof MEAL_TYPES)[number]["v"] {
   const h = new Date().getHours();
   if (h < 11) return "desayuno";
@@ -36,7 +47,9 @@ function suggestMealType(): (typeof MEAL_TYPES)[number]["v"] {
   return "cena";
 }
 
-export function MealSheet() {
+const unitOf = (f: FoodHit) => (f.base === "100ml" ? "ml" : "g");
+
+export function MealSheet({ proteinToday = 0, proteinGoal = 0 }: { proteinToday?: number; proteinGoal?: number }) {
   const open = useUIStore((s) => s.activeSheet === "meal");
   const closeSheet = useUIStore((s) => s.closeSheet);
   const router = useRouter();
@@ -45,11 +58,12 @@ export function MealSheet() {
   const [mealType, setMealType] = useState<string>("almuerzo");
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<FoodHit[]>([]);
+  const [picker, setPicker] = useState<FoodPickerData | null>(null);
   const [items, setItems] = useState<Draft[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [showNewFood, setShowNewFood] = useState(false);
   const [photo, setPhoto] = useState<{ path: string; preview: string } | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [pendingFood, setPendingFood] = useState<FoodHit | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -58,9 +72,23 @@ export function MealSheet() {
     setItems([]);
     setQuery("");
     setError(null);
-    setShowNewFood(false);
     setPhoto(null);
+    setPendingFood(null);
+    getFoodPickerData().then((r) => r.ok && setPicker(r.data));
   }, [open]);
+
+  // Búsqueda con debounce; sin texto no se consulta (se muestran favoritos).
+  useEffect(() => {
+    if (!open || !query.trim()) {
+      setHits([]);
+      return;
+    }
+    const t = setTimeout(async () => {
+      const res = await searchFoods(query);
+      if (res.ok) setHits(res.data);
+    }, 220);
+    return () => clearTimeout(t);
+  }, [query, open]);
 
   async function onPickPhoto(file: File) {
     setError(null);
@@ -74,34 +102,36 @@ export function MealSheet() {
     setPhoto({ path: res.path, preview: URL.createObjectURL(file) });
   }
 
-  // Búsqueda con debounce.
-  useEffect(() => {
-    if (!open) return;
-    const t = setTimeout(async () => {
-      const res = await searchFoods(query);
-      if (res.ok) setHits(res.data);
-    }, 220);
-    return () => clearTimeout(t);
-  }, [query, open]);
-
-  function addFood(food: FoodHit) {
-    const def = food.base === "unidad" ? 1 : 100;
-    setItems((it) => [...it, { food, quantity: def }]);
+  function addDraft(food: FoodHit, grams: number) {
+    setItems((it) => [...it, { food, grams }]);
+    setPendingFood(null);
     setQuery("");
   }
 
-  function setQty(idx: number, q: number) {
-    setItems((it) => it.map((d, i) => (i === idx ? { ...d, quantity: Math.max(0, q) } : d)));
+  async function favorite(f: FoodHit, e: React.MouseEvent) {
+    e.stopPropagation();
+    const next = !f.isFavorite;
+    setHits((hs) => hs.map((x) => (x.id === f.id ? { ...x, isFavorite: next } : x)));
+    setPicker((p) =>
+      p
+        ? {
+            ...p,
+            favorites: next ? [...p.favorites, { ...f, isFavorite: true }] : p.favorites.filter((x) => x.id !== f.id),
+            recent: p.recent.map((x) => (x.id === f.id ? { ...x, isFavorite: next } : x)),
+          }
+        : p
+    );
+    await toggleFoodFavorite({ foodId: f.id, favorite: next });
   }
 
   const totals = items.reduce(
     (acc, d) => {
-      const f = d.quantity / BASE_QTY[d.food.base];
+      const m = macrosOf(d.food, d.grams);
       return {
-        kcal: acc.kcal + d.food.kcal * f,
-        protein: acc.protein + d.food.proteinG * f,
-        carbs: acc.carbs + d.food.carbsG * f,
-        fat: acc.fat + d.food.fatG * f,
+        kcal: acc.kcal + m.kcal,
+        protein: acc.protein + m.protein,
+        carbs: acc.carbs + m.carbs,
+        fat: acc.fat + m.fat,
       };
     },
     { kcal: 0, protein: 0, carbs: 0, fat: 0 }
@@ -117,7 +147,7 @@ export function MealSheet() {
       const res = await logMeal({
         mealType,
         photoPath: photo?.path ?? null,
-        items: items.map((d) => ({ kind: "food" as const, foodId: d.food.id, quantity: d.quantity })),
+        items: items.map((d) => ({ kind: "food" as const, foodId: d.food.id, quantity: d.grams })),
       });
       if (!res.ok) {
         setError(res.error);
@@ -128,9 +158,172 @@ export function MealSheet() {
     });
   }
 
+  function useRecipe(recipeId: string) {
+    setError(null);
+    startTransition(async () => {
+      const res = await logRecipe({ recipeId, mealType });
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      closeSheet();
+      router.refresh();
+    });
+  }
+
+  // Paso 2: cantidad del alimento elegido.
+  if (pendingFood) {
+    return (
+      <Sheet open={open} onClose={closeSheet} title="" className="meal-sheet qty-sheet">
+        <QuantityStep
+          food={pendingFood}
+          onBack={() => setPendingFood(null)}
+          onConfirm={(grams) => addDraft(pendingFood, grams)}
+        />
+      </Sheet>
+    );
+  }
+
+  const proteinAfter = proteinToday + totals.protein;
+  const proteinPct = proteinGoal ? Math.min(100, (proteinAfter / proteinGoal) * 100) : 0;
+
   return (
     <Sheet open={open} onClose={closeSheet} title="Registrar comida" className="meal-sheet">
-      {/* Foto: se muestra como banner, igual que en el detalle. */}
+      {/* Progreso de proteína mientras se arma la comida */}
+      {proteinGoal > 0 && (
+        <div className="ms-macrobar">
+          <div className="mb-top">
+            <span className="eyebrow">Proteína</span>
+            <b>
+              {nf(proteinAfter)} <small>/ {nf(proteinGoal)} g</small>
+            </b>
+          </div>
+          <div className="mb-track">
+            <i style={{ width: `${(proteinToday / (proteinGoal || 1)) * 100}%` }} />
+            <u style={{ width: `${proteinPct - (proteinToday / (proteinGoal || 1)) * 100}%` }} />
+          </div>
+        </div>
+      )}
+
+      <div className="chip-row" role="group" aria-label="Tipo de comida">
+        {MEAL_TYPES.map((m) => (
+          <button
+            key={m.v}
+            className={`chip${mealType === m.v ? " on" : ""}`}
+            onClick={() => setMealType(m.v)}
+            aria-pressed={mealType === m.v}
+          >
+            {m.l}
+          </button>
+        ))}
+      </div>
+
+      {/* Lo que ya se agregó */}
+      {items.length > 0 && (
+        <div className="ms-items">
+          {items.map((d, i) => {
+            const m = macrosOf(d.food, d.grams);
+            return (
+              <div className="ms-item" key={`${d.food.id}-${i}`}>
+                <div className="ms-in">
+                  <div className="n">{d.food.name}</div>
+                  <div className="s">
+                    {nf(d.grams)} {unitOf(d.food)} · {nf(m.kcal)} kcal · {nf(m.protein, 1)} g P
+                  </div>
+                </div>
+                <button className="ms-del" onClick={() => setItems((it) => it.filter((_, j) => j !== i))} aria-label={`Quitar ${d.food.name}`}>
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            );
+          })}
+          <div className="ms-total">
+            <b>{nf(totals.kcal)} kcal</b>
+            <span>
+              P {nf(totals.protein, 1)} · C {nf(totals.carbs, 1)} · G {nf(totals.fat, 1)}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Buscador siempre arriba */}
+      <div className="ms-search">
+        <Search size={16} />
+        <input
+          type="text"
+          placeholder="Buscar alimento…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          aria-label="Buscar alimento"
+        />
+        {query && (
+          <button className="ms-clear" onClick={() => setQuery("")} aria-label="Limpiar">
+            <X size={15} />
+          </button>
+        )}
+      </div>
+
+      {query ? (
+        <div className="ms-hits">
+          {hits.length === 0 ? (
+            <div className="ms-empty">Sin resultados para “{query}”.</div>
+          ) : (
+            hits.map((f) => <FoodRow key={f.id} food={f} onPick={setPendingFood} onFav={favorite} />)
+          )}
+        </div>
+      ) : (
+        <>
+          {picker?.recipes.length ? (
+            <section className="ms-group">
+              <span className="eyebrow">⭐ Mis recetas</span>
+              <div className="ms-recipes">
+                {picker.recipes.map((r) => (
+                  <button key={r.id} className="ms-recipe" onClick={() => useRecipe(r.id)} disabled={pending}>
+                    <span className="rc-e" aria-hidden="true">
+                      {r.emoji ?? "🍽"}
+                    </span>
+                    <span className="rc-main">
+                      <b>{r.name}</b>
+                      <small>
+                        {nf(r.kcal)} kcal · {nf(r.proteinG)} g P
+                      </small>
+                    </span>
+                    <Plus size={16} />
+                  </button>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          {picker?.favorites.length ? (
+            <section className="ms-group">
+              <span className="eyebrow">⭐ Favoritos</span>
+              <div className="ms-hits inline">
+                {picker.favorites.map((f) => (
+                  <FoodRow key={f.id} food={f} onPick={setPendingFood} onFav={favorite} />
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          {picker?.recent.length ? (
+            <section className="ms-group">
+              <span className="eyebrow">Recientes</span>
+              <div className="ms-hits inline">
+                {picker.recent.map((f) => (
+                  <FoodRow key={f.id} food={f} onPick={setPendingFood} onFav={favorite} />
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          {picker && !picker.favorites.length && !picker.recent.length && !picker.recipes.length && (
+            <p className="note">Buscá un alimento para empezar. Los que uses seguido van a aparecer acá.</p>
+          )}
+        </>
+      )}
+
+      {/* Foto */}
       {photo ? (
         <div className="ms-photo">
           <Image src={photo.preview} alt="Foto de la comida" fill sizes="100vw" className="md-img" />
@@ -157,162 +350,163 @@ export function MealSheet() {
         }}
       />
 
-      <div className="chip-row" role="group" aria-label="Tipo de comida">
-        {MEAL_TYPES.map((m) => (
-          <button
-            key={m.v}
-            className={`chip${mealType === m.v ? " on" : ""}`}
-            onClick={() => setMealType(m.v)}
-            aria-pressed={mealType === m.v}
-          >
-            {m.l}
-          </button>
-        ))}
-      </div>
-
-      {items.length > 0 && (
-        <div className="ms-items">
-          {items.map((d, i) => (
-            <div className="ms-item" key={`${d.food.id}-${i}`}>
-              <div className="ms-in">
-                <div className="n">{d.food.name}</div>
-                <div className="s">
-                  {nf((d.food.kcal * d.quantity) / BASE_QTY[d.food.base])} kcal ·{" "}
-                  {nf((d.food.proteinG * d.quantity) / BASE_QTY[d.food.base], 1)} g P
-                </div>
-              </div>
-              <div className="ms-qty">
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  value={d.quantity}
-                  onChange={(e) => setQty(i, Number(e.target.value))}
-                  aria-label={`Cantidad de ${d.food.name}`}
-                />
-                <span>{unitOf(d.food.base)}</span>
-              </div>
-              <button
-                className="ms-del"
-                onClick={() => setItems((it) => it.filter((_, j) => j !== i))}
-                aria-label={`Quitar ${d.food.name}`}
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
-          ))}
-          <div className="ms-total">
-            <b>{nf(totals.kcal)} kcal</b>
-            <span>
-              P {nf(totals.protein, 1)} · C {nf(totals.carbs, 1)} · G {nf(totals.fat, 1)}
-            </span>
-          </div>
-        </div>
-      )}
-
-      <div className="ms-search">
-        <Search size={16} />
-        <input
-          type="text"
-          placeholder="Buscar alimento…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          aria-label="Buscar alimento"
-        />
-      </div>
-
-      <div className="ms-hits">
-        {hits.length === 0 && query ? (
-          <div className="ms-empty">
-            Sin resultados.
-            <button className="linkish" onClick={() => setShowNewFood(true)}>
-              Crear &quot;{query}&quot;
-            </button>
-          </div>
-        ) : (
-          hits.map((f) => (
-            <button key={f.id} className="ms-hit" onClick={() => addFood(f)}>
-              <span className="n">{f.name}</span>
-              <span className="s">
-                {nf(f.kcal)} kcal / {f.base === "unidad" ? "un" : f.base}
-              </span>
-              <Plus size={16} />
-            </button>
-          ))
-        )}
-      </div>
-
-      {showNewFood && <NewFoodForm initialName={query} onCreated={(f) => { addFood(f); setShowNewFood(false); }} />}
-
       {error && <p className="form-error">{error}</p>}
 
       <button className="ci-save" onClick={save} disabled={pending || items.length === 0}>
-        {pending ? "Guardando…" : `Registrar ${items.length > 0 ? `(${nf(totals.kcal)} kcal)` : ""}`}
+        {pending ? "Guardando…" : `Registrar${items.length ? ` · ${nf(totals.kcal)} kcal` : ""}`}
       </button>
     </Sheet>
   );
 }
 
-function NewFoodForm({ initialName, onCreated }: { initialName: string; onCreated: (f: FoodHit) => void }) {
-  const [pending, startTransition] = useTransition();
-  const [err, setErr] = useState<string | null>(null);
-  const [f, setF] = useState({
-    name: initialName,
-    base: "100g",
-    kcal: "",
-    proteinG: "",
-    carbsG: "",
-    fatG: "",
-  });
+/** Fila de alimento: macros a la vista y estrella de favorito. */
+function FoodRow({
+  food,
+  onPick,
+  onFav,
+}: {
+  food: FoodHit;
+  onPick: (f: FoodHit) => void;
+  onFav: (f: FoodHit, e: React.MouseEvent) => void;
+}) {
+  return (
+    <div className="ms-hit">
+      <button className="hit-main" onClick={() => onPick(food)}>
+        <span className="hit-id">
+          <b>
+            {food.name}
+            {food.state && <em className="hit-state">{food.state}</em>}
+          </b>
+          <small>
+            {nf(food.kcal)} kcal · {food.base === "100ml" ? "100 ml" : "100 g"}
+          </small>
+        </span>
+        <span className="hit-macros">
+          <em>P {nf(food.proteinG, 1)}</em>
+          <em>C {nf(food.carbsG, 1)}</em>
+          <em>G {nf(food.fatG, 1)}</em>
+        </span>
+      </button>
+      <button
+        className={`hit-fav${food.isFavorite ? " on" : ""}`}
+        onClick={(e) => onFav(food, e)}
+        aria-label={food.isFavorite ? `Quitar ${food.name} de favoritos` : `Marcar ${food.name} como favorito`}
+        aria-pressed={food.isFavorite}
+      >
+        <Star size={16} fill={food.isFavorite ? "currentColor" : "none"} />
+      </button>
+    </div>
+  );
+}
 
-  const num = (v: string) => Number(String(v).replace(",", ".")) || 0;
+/** Paso de cantidad: se elige en la unidad natural del alimento. */
+function QuantityStep({
+  food,
+  onBack,
+  onConfirm,
+}: {
+  food: FoodHit;
+  onBack: () => void;
+  onConfirm: (grams: number) => void;
+}) {
+  const hasUnit = !!food.unitLabel && !!food.unitGrams;
+  const [mode, setMode] = useState<"unit" | "gram">(hasUnit ? "unit" : "gram");
+  const [units, setUnits] = useState(1);
+  const [grams, setGrams] = useState(100);
 
-  function submit() {
-    setErr(null);
-    startTransition(async () => {
-      const res = await createFood({
-        name: f.name,
-        base: f.base,
-        kcal: num(f.kcal),
-        proteinG: num(f.proteinG),
-        carbsG: num(f.carbsG),
-        fatG: num(f.fatG),
-      });
-      if (!res.ok) {
-        setErr(res.error);
-        return;
-      }
-      onCreated(res.data);
-    });
-  }
+  const total = mode === "unit" && hasUnit ? units * (food.unitGrams ?? 0) : grams;
+  const m = macrosOf(food, total);
+  const u = unitOf(food);
 
   return (
-    <div className="nf-form">
-      <div className="nf-title">Nuevo alimento</div>
-      <input className="ci-input" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="Nombre" />
-      <div className="chip-row" style={{ marginTop: 10 }}>
-        {["100g", "100ml", "unidad"].map((b) => (
-          <button key={b} className={`chip${f.base === b ? " on" : ""}`} onClick={() => setF({ ...f, base: b })}>
-            por {b}
+    <div className="qty">
+      <header className="qty-head">
+        <button className="md-fab qty-back" onClick={onBack} aria-label="Volver">
+          <ArrowLeft size={18} />
+        </button>
+        <div>
+          <h3>{food.name}</h3>
+          <p>
+            {nf(food.kcal)} kcal · {food.base === "100ml" ? "100 ml" : "100 g"}
+            {food.state ? ` · ${food.state}` : ""}
+          </p>
+        </div>
+      </header>
+
+      {hasUnit && (
+        <div className="chip-row">
+          <button className={`chip${mode === "unit" ? " on" : ""}`} onClick={() => setMode("unit")}>
+            Por {food.unitLabel}
           </button>
-        ))}
-      </div>
-      <div className="nf-grid">
-        {([["kcal", "kcal"], ["proteinG", "Proteína g"], ["carbsG", "Carbos g"], ["fatG", "Grasa g"]] as const).map(([k, l]) => (
-          <label key={k}>
-            <span>{l}</span>
+          <button className={`chip${mode === "gram" ? " on" : ""}`} onClick={() => setMode("gram")}>
+            En {u}
+          </button>
+        </div>
+      )}
+
+      <div className="qty-input">
+        {mode === "unit" && hasUnit ? (
+          <>
+            <button onClick={() => setUnits((v) => Math.max(0.5, Math.round((v - 0.5) * 2) / 2))} aria-label="Menos">
+              <Minus size={20} />
+            </button>
+            <span className="qty-val">
+              {nf(units, units % 1 === 0 ? 0 : 1)}
+              <small>
+                {food.unitLabel}
+                {units !== 1 ? "s" : ""}
+              </small>
+            </span>
+            <button onClick={() => setUnits((v) => v + 0.5)} aria-label="Más">
+              <Plus size={20} />
+            </button>
+          </>
+        ) : (
+          <>
+            <button onClick={() => setGrams((v) => Math.max(5, v - 10))} aria-label="Menos">
+              <Minus size={20} />
+            </button>
             <input
-              className="ci-input"
-              inputMode="decimal"
-              value={f[k]}
-              onChange={(e) => setF({ ...f, [k]: e.target.value })}
+              className="qty-field"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              value={grams}
+              onChange={(e) => setGrams(Math.max(1, Number(e.target.value) || 0))}
+              aria-label={`Cantidad en ${u}`}
             />
-          </label>
-        ))}
+            <button onClick={() => setGrams((v) => v + 10)} aria-label="Más">
+              <Plus size={20} />
+            </button>
+          </>
+        )}
       </div>
-      {err && <p className="form-error">{err}</p>}
-      <button className="btn-dark-sm" onClick={submit} disabled={pending || !f.name.trim()}>
-        {pending ? "Creando…" : "Crear y agregar"}
+
+      <p className="qty-eq">
+        = {nf(total)} {u}
+      </p>
+
+      <div className="qty-macros">
+        <div className="qm kcal">
+          <span>🔥 Calorías</span>
+          <b>{nf(m.kcal)}</b>
+        </div>
+        <div className="qm">
+          <span>🍗 Proteína</span>
+          <b>{nf(m.protein, 1)} g</b>
+        </div>
+        <div className="qm">
+          <span>🌾 Carbos</span>
+          <b>{nf(m.carbs, 1)} g</b>
+        </div>
+        <div className="qm">
+          <span>🥑 Grasa</span>
+          <b>{nf(m.fat, 1)} g</b>
+        </div>
+      </div>
+
+      <button className="ci-save" onClick={() => onConfirm(total)}>
+        Agregar
       </button>
     </div>
   );

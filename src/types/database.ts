@@ -192,44 +192,151 @@ export type Database = {
       foods: {
         Row: {
           base: string
+          brand: string | null
           carbs_g: number
+          category: string
           created_at: string | null
           fat_g: number
           fiber_g: number
           id: string
+          is_favorite: boolean
           kcal: number
           name: string
           protein_g: number
+          sodium_mg: number
+          state: string | null
+          sugar_g: number
+          unit_grams: number | null
+          unit_label: string | null
           updated_at: string | null
           user_id: string
+        }
+        Insert: {
+          base?: string
+          brand?: string | null
+          carbs_g?: number
+          category?: string
+          created_at?: string | null
+          fat_g?: number
+          fiber_g?: number
+          id?: string
+          is_favorite?: boolean
+          kcal?: number
+          name: string
+          protein_g?: number
+          sodium_mg?: number
+          state?: string | null
+          sugar_g?: number
+          unit_grams?: number | null
+          unit_label?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          base?: string
+          brand?: string | null
+          carbs_g?: number
+          category?: string
+          created_at?: string | null
+          fat_g?: number
+          fiber_g?: number
+          id?: string
+          is_favorite?: boolean
+          kcal?: number
+          name?: string
+          protein_g?: number
+          sodium_mg?: number
+          state?: string | null
+          sugar_g?: number
+          unit_grams?: number | null
+          unit_label?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      recipes: {
+        Row: {
+          created_at: string | null
+          emoji: string | null
+          id: string
+          is_favorite: boolean
+          name: string
+          servings: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          emoji?: string | null
+          id?: string
+          is_favorite?: boolean
+          name: string
+          servings?: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          emoji?: string | null
+          id?: string
+          is_favorite?: boolean
+          name?: string
+          servings?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      recipe_items: {
+        Row: {
+          base: string
+          carbs_g: number
+          created_at: string | null
+          fat_g: number
+          food_id: string | null
+          food_name: string
+          id: string
+          kcal: number
+          protein_g: number
+          quantity: number
+          recipe_id: string
         }
         Insert: {
           base?: string
           carbs_g?: number
           created_at?: string | null
           fat_g?: number
-          fiber_g?: number
+          food_id?: string | null
+          food_name: string
           id?: string
           kcal?: number
-          name: string
           protein_g?: number
-          updated_at?: string | null
-          user_id: string
+          quantity: number
+          recipe_id: string
         }
         Update: {
           base?: string
           carbs_g?: number
           created_at?: string | null
           fat_g?: number
-          fiber_g?: number
+          food_id?: string | null
+          food_name?: string
           id?: string
           kcal?: number
-          name?: string
           protein_g?: number
-          updated_at?: string | null
-          user_id?: string
+          quantity?: number
+          recipe_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "recipe_items_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       habit_entries: {
         Row: {

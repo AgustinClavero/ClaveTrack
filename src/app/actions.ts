@@ -3,6 +3,7 @@
 export * from "./actions/habits";
 export * from "./actions/checkin";
 export * from "./actions/nutrition";
+export * from "./actions/foods";
 export * from "./actions/profile";
 export * from "./actions/activity";
 export * from "./actions/progress";

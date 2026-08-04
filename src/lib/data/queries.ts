@@ -837,6 +837,8 @@ export interface ShellData {
   habits: Habit[];
   heightCm: number | null;
   alerts: Insight[];
+  proteinToday: number;
+  proteinGoal: number;
 }
 
 export async function getShellData(): Promise<ShellData | null> {
@@ -927,6 +929,8 @@ export async function getShellData(): Promise<ShellData | null> {
     habits,
     heightCm: ctx.profile?.height_cm != null ? Number(ctx.profile.height_cm) : null,
     alerts,
+    proteinToday: Math.round(protein),
+    proteinGoal: goalRow?.protein_g ?? 0,
   };
 }
 

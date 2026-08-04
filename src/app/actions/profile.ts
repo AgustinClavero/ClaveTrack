@@ -148,11 +148,16 @@ export async function completeOnboarding(input: unknown): Promise<ActionResult> 
         user_id: ctx.userId,
         name: f.name,
         base: f.base,
+        category: f.category,
         kcal: f.kcal,
         protein_g: f.protein,
         carbs_g: f.carbs,
         fat_g: f.fat,
         fiber_g: f.fiber ?? 0,
+        unit_label: f.unitLabel ?? null,
+        unit_grams: f.unitGrams ?? null,
+        state: f.state ?? null,
+        is_favorite: f.favorite ?? false,
       }))
     );
   }

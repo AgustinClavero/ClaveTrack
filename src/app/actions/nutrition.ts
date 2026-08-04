@@ -3,120 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { getServerClient, getUserContext } from "@/lib/data/context";
 import { materializeDayScore } from "@/lib/data/score";
-import { foodCreateSchema, logMealSchema, nutritionGoalsSchema, updateMealSchema, uuid } from "@/lib/validations";
-import { DEFAULT_FOODS } from "@/lib/data/default-foods";
+import { logMealSchema, nutritionGoalsSchema, updateMealSchema, uuid } from "@/lib/validations";
 import type { ActionResult } from "@/types";
 import type { TablesUpdate } from "@/types/database";
 
 function revalidateDay() {
   revalidatePath("/today");
   revalidatePath("/nutrition");
-}
-
-export interface FoodHit {
-  id: string;
-  name: string;
-  base: string;
-  kcal: number;
-  proteinG: number;
-  carbsG: number;
-  fatG: number;
-}
-
-/** Busca alimentos del catálogo del usuario (para el picker de comidas). */
-export async function searchFoods(query: string): Promise<ActionResult<FoodHit[]>> {
-  const ctx = await getUserContext();
-  if (!ctx) return { ok: false, error: "Sesión expirada." };
-  const q = String(query ?? "").trim().slice(0, 60);
-
-  const supabase = getServerClient();
-  let req = supabase
-    .from("foods")
-    .select("id, name, base, kcal, protein_g, carbs_g, fat_g")
-    .eq("user_id", ctx.userId)
-    .order("name")
-    .limit(20);
-  if (q) req = req.ilike("name", `%${q}%`);
-
-  const { data, error } = await req;
-  if (error) return { ok: false, error: "No se pudo buscar." };
-  return {
-    ok: true,
-    data: (data ?? []).map((f) => ({
-      id: f.id,
-      name: f.name,
-      base: f.base,
-      kcal: Number(f.kcal),
-      proteinG: Number(f.protein_g),
-      carbsG: Number(f.carbs_g),
-      fatG: Number(f.fat_g),
-    })),
-  };
-}
-
-/** Alta de alimento propio. */
-export async function createFood(input: unknown): Promise<ActionResult<FoodHit>> {
-  const parsed = foodCreateSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: "Revisá los datos del alimento." };
-  const ctx = await getUserContext();
-  if (!ctx) return { ok: false, error: "Sesión expirada." };
-
-  const supabase = getServerClient();
-  const { data, error } = await supabase
-    .from("foods")
-    .insert({
-      user_id: ctx.userId,
-      name: parsed.data.name,
-      base: parsed.data.base,
-      kcal: parsed.data.kcal,
-      protein_g: parsed.data.proteinG,
-      carbs_g: parsed.data.carbsG,
-      fat_g: parsed.data.fatG,
-      fiber_g: parsed.data.fiberG ?? 0,
-    })
-    .select("id, name, base, kcal, protein_g, carbs_g, fat_g")
-    .single();
-  if (error || !data) return { ok: false, error: "No se pudo crear el alimento." };
-
-  return {
-    ok: true,
-    data: {
-      id: data.id,
-      name: data.name,
-      base: data.base,
-      kcal: Number(data.kcal),
-      proteinG: Number(data.protein_g),
-      carbsG: Number(data.carbs_g),
-      fatG: Number(data.fat_g),
-    },
-  };
-}
-
-/** Carga el catálogo base de alimentos (una vez; no duplica si ya hay). */
-export async function seedDefaultFoods(): Promise<ActionResult<{ inserted: number }>> {
-  const ctx = await getUserContext();
-  if (!ctx) return { ok: false, error: "Sesión expirada." };
-  const supabase = getServerClient();
-
-  const { count } = await supabase
-    .from("foods")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", ctx.userId);
-  if ((count ?? 0) > 0) return { ok: true, data: { inserted: 0 } };
-
-  const rows = DEFAULT_FOODS.map((f) => ({
-    user_id: ctx.userId,
-    name: f.name,
-    base: f.base,
-    kcal: f.kcal,
-    protein_g: f.protein,
-    carbs_g: f.carbs,
-    fat_g: f.fat,
-    fiber_g: f.fiber ?? 0,
-  }));
-  const { error } = await supabase.from("foods").insert(rows);
-  if (error) return { ok: false, error: "No se pudo cargar el catálogo base." };
-  return { ok: true, data: { inserted: rows.length } };
 }
 
 /**

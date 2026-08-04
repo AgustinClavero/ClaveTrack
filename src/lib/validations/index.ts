@@ -77,14 +77,52 @@ export const weightSchema = z.object({
 export const foodBase = z.enum(["100g", "100ml", "unidad"]);
 export const mealType = z.enum(["desayuno", "almuerzo", "merienda", "cena", "colacion", "bebida"]);
 
+export const foodCategory = z.enum([
+  "proteinas",
+  "carbohidratos",
+  "verduras",
+  "frutas",
+  "grasas",
+  "lacteos",
+  "condimentos",
+  "otros",
+]);
+
 export const foodCreateSchema = z.object({
   name: z.string().trim().min(1).max(120),
   base: foodBase,
+  category: foodCategory.optional(),
+  brand: z.string().trim().max(60).nullable().optional(),
   kcal: z.number().min(0).max(9000),
   proteinG: z.number().min(0).max(1000),
   carbsG: z.number().min(0).max(1000),
   fatG: z.number().min(0).max(1000),
   fiberG: z.number().min(0).max(1000).optional().default(0),
+  unitLabel: z.string().trim().max(20).nullable().optional(),
+  unitGrams: z.number().positive().max(5000).nullable().optional(),
+  state: z.enum(["crudo", "cocido"]).nullable().optional(),
+});
+
+export const toggleFavoriteSchema = z.object({
+  foodId: uuid,
+  favorite: z.boolean(),
+});
+
+export const recipeSchema = z.object({
+  id: uuid.optional(),
+  name: z.string().trim().min(1).max(80),
+  emoji: z.string().trim().max(8).nullable().optional(),
+  servings: z.number().positive().max(20).optional(),
+  items: z
+    .array(z.object({ foodId: uuid, quantity: z.number().positive().max(100000) }))
+    .min(1)
+    .max(30),
+});
+
+export const logRecipeSchema = z.object({
+  recipeId: uuid,
+  mealType,
+  servings: z.number().positive().max(10).optional(),
 });
 
 const mealItemFromFood = z.object({

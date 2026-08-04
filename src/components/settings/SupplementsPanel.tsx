@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
-import { upsertHabit, archiveHabit } from "@/app/actions";
+import { upsertHabit, archiveHabit, seedDefaultFoods } from "@/app/actions";
 import type { Habit } from "@/types";
 
 const SUGGESTIONS = ["Creatina", "Vitamina D", "Omega 3", "Magnesio", "Multivitamínico", "Proteína", "Zinc", "Colágeno"];
@@ -50,6 +50,19 @@ export function SupplementsPanel({ items }: { items: Habit[] }) {
   }
 
   const free = SUGGESTIONS.filter((s) => !items.some((i) => i.name.toLowerCase() === s.toLowerCase()));
+
+  function loadCatalog() {
+    setMsg(null);
+    startTransition(async () => {
+      const res = await seedDefaultFoods();
+      if (!res.ok) setMsg({ ok: false, text: res.error });
+      else
+        setMsg({
+          ok: true,
+          text: res.data.inserted ? `Se agregaron ${res.data.inserted} alimentos.` : "Tu catálogo ya está completo.",
+        });
+    });
+  }
 
   return (
     <div className="stack">
@@ -112,6 +125,17 @@ export function SupplementsPanel({ items }: { items: Habit[] }) {
             ))}
           </div>
         )}
+      </div>
+
+      <div className="card">
+        <h2 className="panel-title">Catálogo de alimentos</h2>
+        <p className="note" style={{ margin: "0 0 12px" }}>
+          Sumá los alimentos base por categoría (proteínas, carbos, verduras, frutas, grasas, lácteos y condimentos).
+          No duplica los que ya tenés.
+        </p>
+        <button className="btn-dark-sm" onClick={loadCatalog} disabled={pending}>
+          {pending ? "Cargando…" : "Actualizar catálogo base"}
+        </button>
       </div>
     </div>
   );

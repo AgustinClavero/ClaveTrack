@@ -5169,3 +5169,345 @@ svg.line {
   border-radius: var(--r-pill);
   font-size: 22px;
 }
+
+/* ============================================================
+   PICKER DE ALIMENTOS — buscar primero, favoritos, recetas
+   ============================================================ */
+
+/* Progreso de proteína mientras se arma la comida */
+.ms-macrobar {
+  padding: var(--sp-3) var(--sp-4);
+  margin-bottom: var(--sp-4);
+  background: var(--surface-2);
+  border-radius: var(--r-md);
+}
+.mb-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--sp-2);
+}
+.mb-top b {
+  font-size: var(--fs-md);
+  font-weight: 800;
+  letter-spacing: var(--tracking-tight);
+}
+.mb-top small {
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  font-weight: 700;
+}
+.mb-track {
+  display: flex;
+  height: 10px;
+  background: var(--surface);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+.mb-track i {
+  display: block;
+  height: 100%;
+  background: var(--red);
+}
+/* Lo que suma la comida en curso, en un tono más claro. */
+.mb-track u {
+  display: block;
+  height: 100%;
+  background: var(--red);
+  opacity: 0.45;
+}
+
+/* Buscador */
+.ms-search .ms-clear {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: var(--r-pill);
+}
+.ms-search .ms-clear:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+/* Grupos: recetas / favoritos / recientes */
+.ms-group {
+  margin-bottom: var(--sp-4);
+}
+.ms-group > .eyebrow {
+  margin-bottom: var(--sp-2);
+}
+.ms-hits.inline {
+  max-height: none;
+  overflow: visible;
+  margin-bottom: 0;
+}
+
+/* Recetas: un toque y queda cargada */
+.ms-recipes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.ms-recipe {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: var(--sp-3);
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color var(--dur-fast) var(--ease);
+}
+.ms-recipe:hover:not(:disabled) {
+  border-color: var(--ink);
+}
+.ms-recipe:disabled {
+  opacity: 0.5;
+}
+.rc-e {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  border-radius: var(--r-sm);
+  font-size: var(--fs-lg);
+}
+.rc-main {
+  flex: 1;
+  min-width: 0;
+}
+.rc-main b {
+  display: block;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+}
+.rc-main small {
+  display: block;
+  margin-top: 1px;
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  font-weight: 600;
+}
+
+/* Fila de alimento con macros y estrella */
+.ms-hit {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  min-height: 56px;
+  padding: 0;
+  border-radius: var(--r-sm);
+}
+.ms-hit:hover {
+  background: var(--surface-2);
+}
+.hit-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border: none;
+  background: none;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+.hit-id {
+  min-width: 0;
+}
+.hit-id b {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+}
+.hit-state {
+  padding: 1px 6px;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.hit-id small {
+  display: block;
+  margin-top: 1px;
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  font-weight: 600;
+}
+.hit-macros {
+  display: flex;
+  gap: var(--sp-2);
+  flex: 0 0 auto;
+}
+.hit-macros em {
+  font-style: normal;
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  color: var(--text-2);
+  padding: 2px 6px;
+  background: var(--surface-2);
+  border-radius: var(--r-xs);
+}
+.ms-hit:hover .hit-macros em {
+  background: var(--surface);
+}
+.hit-fav {
+  flex: 0 0 auto;
+  width: 44px;
+  display: grid;
+  place-items: center;
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.hit-fav.on {
+  color: var(--amber);
+}
+.hit-fav:hover {
+  color: var(--amber);
+}
+
+/* ---------- Paso de cantidad ---------- */
+.qty {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+.qty-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.qty-back {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.qty-back:hover {
+  background: var(--line);
+}
+.qty-head h3 {
+  margin: 0;
+  font-size: var(--fs-xl);
+  font-weight: 800;
+  letter-spacing: var(--tracking-tight);
+}
+.qty-head p {
+  margin: 2px 0 0;
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  font-weight: 600;
+}
+.qty-input {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  background: var(--surface-2);
+  border-radius: var(--r-lg);
+}
+.qty-input button {
+  width: 52px;
+  height: 52px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+.qty-input button:hover {
+  background: var(--ink);
+  color: var(--ink-contrast);
+}
+.qty-val {
+  flex: 1;
+  text-align: center;
+  font-size: var(--fs-3xl);
+  font-weight: 800;
+  letter-spacing: var(--tracking-tight);
+  line-height: 1;
+}
+.qty-val small {
+  display: block;
+  margin-top: var(--sp-1);
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  font-weight: 700;
+}
+.qty-field {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  color: var(--text);
+  font-size: var(--fs-3xl);
+  font-weight: 800;
+  letter-spacing: var(--tracking-tight);
+  text-align: center;
+  outline: none;
+}
+.qty-eq {
+  margin: calc(var(--sp-3) * -1) 0 0;
+  text-align: center;
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+  font-weight: 700;
+}
+.qty-macros {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--sp-2);
+}
+.qm {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--sp-3);
+  background: var(--surface-2);
+  border-radius: var(--r-md);
+}
+.qm span {
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  font-weight: 700;
+}
+.qm b {
+  font-size: var(--fs-lg);
+  font-weight: 800;
+  letter-spacing: var(--tracking-tight);
+}
+.qm.kcal {
+  grid-column: 1 / -1;
+  background: var(--amber-tint);
+}
+.qm.kcal b {
+  font-size: var(--fs-2xl);
+}
+.qty-sheet h3:empty {
+  display: none;
+}
