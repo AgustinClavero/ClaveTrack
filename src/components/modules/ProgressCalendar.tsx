@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { Check, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Ring } from "@/components/ui/Ring";
 import { fetchMonthDetail } from "@/app/actions";
 import { addMonths, monthGrid, monthLabel, type MonthCell } from "@/lib/date";
+import { DayDetailBody } from "./DayDetailSheet";
 import type { DayDetail } from "@/lib/data/queries";
 
 const WEEKDAYS = ["L", "M", "M", "J", "V", "S", "D"];
@@ -18,10 +19,13 @@ export function ProgressCalendar({
   days: initialDays,
   threshold,
   timezone,
+  today,
 }: {
   month: string;
   days: DayDetail[];
   threshold: number;
+  /** "Hoy" del servidor: el resumen solo existe para días cerrados. */
+  today: string;
   timezone: string;
 }) {
   const [month, setMonth] = useState(initialMonth);
@@ -113,46 +117,18 @@ export function ProgressCalendar({
       {error && <p className="form-error">{error}</p>}
       <p className="note">Tocá cualquier día para ver el detalle.</p>
 
-      {selected && <DayModal day={selected} threshold={threshold} onClose={() => setSelected(null)} />}
+      {selected && <DayModal today={today} day={selected} threshold={threshold} onClose={() => setSelected(null)} />}
     </section>
   );
 }
 
-function DayModal({ day, threshold, onClose }: { day: DayDetail; threshold: number; onClose: () => void }) {
-  const met = day.total >= threshold;
-  const done = day.items.filter((i) => i.done).length;
-
+function DayModal({ day, threshold, today, onClose }: { day: DayDetail; threshold: number; today: string; onClose: () => void }) {
   return (
     <>
       <div className="overlay show" onClick={onClose} aria-hidden="true" />
       <div className="sheet day-modal show" role="dialog" aria-modal="true" aria-label={`Detalle de ${day.label}`}>
         <div className="grip" />
-        <header className="dm-head">
-          <Ring size={64} stroke={7} value={day.total / 100} color="var(--ink)" track="var(--surface-2)" centerFontSize={19}>
-            <b>{day.total}</b>
-          </Ring>
-          <div>
-            <h3>{day.label}</h3>
-            <p>
-              {met ? "Día cumplido" : `Debajo del ${threshold}%`} · {done} de {day.items.length}
-            </p>
-          </div>
-          <button className="mr-del" onClick={onClose} aria-label="Cerrar">
-            <X size={18} />
-          </button>
-        </header>
-
-        <ul className="dm-list">
-          {day.items.map((i) => (
-            <li key={i.label} className={i.done ? "ok" : "no"}>
-              <span className="dm-ic">{i.done ? <Check size={13} strokeWidth={3.5} /> : <X size={13} strokeWidth={3} />}</span>
-              <span className="dm-name">
-                <span aria-hidden="true">{i.emoji}</span> {i.label}
-              </span>
-              {i.detail && <span className="dm-val">{i.detail}</span>}
-            </li>
-          ))}
-        </ul>
+        <DayDetailBody day={day} threshold={threshold} today={today} onClose={onClose} />
       </div>
     </>
   );
