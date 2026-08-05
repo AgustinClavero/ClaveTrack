@@ -5,6 +5,8 @@
 // nunca penaliza por un área que el usuario no usa o que aún no tiene datos.
 // ============================================================
 
+import { nutritionScore, type NutritionResult } from "./nutrition-score";
+
 export type AreaKey = "nutrition" | "activity" | "focus" | "study" | "habits" | "rest";
 
 export const AREA_LABELS: Record<AreaKey, string> = {
@@ -67,29 +69,44 @@ export function computeDay(
 // así el score en pantalla y el persistido nunca divergen.
 
 export interface DayAreaInputs {
-  /** Totales de comidas del día (suma de meal_items). */
+  /** Totales y decisiones del día (ver dayFoodFacts). */
   totals: { kcal: number; protein: number };
   mealCount: number;
   goals: { kcal: number; protein: number } | null;
+  /** Litros de agua del día y su objetivo. 0 = sin objetivo definido. */
+  waterL?: number;
+  waterGoalL?: number;
+  vegetableServings?: number;
+  fruitServings?: number;
+  processedKcal?: number;
   /** Hábitos ACTIVOS del día con su estado. */
   habits: { done: boolean }[];
   /** Calidad de sueño 1..10 del check-in (null = sin dato). */
   sleepQuality: number | null;
 }
 
+/** El área de nutrición es el Nutrition Score completo, no kcal vs objetivo. */
+export function nutritionAreaFor(i: DayAreaInputs): NutritionResult {
+  return nutritionScore({
+    kcal: i.totals.kcal,
+    kcalGoal: i.goals?.kcal ?? 0,
+    protein: i.totals.protein,
+    proteinGoal: i.goals?.protein ?? 0,
+    waterL: i.waterL ?? 0,
+    waterGoalL: i.waterGoalL ?? 0,
+    vegetableServings: i.vegetableServings ?? 0,
+    fruitServings: i.fruitServings ?? 0,
+    processedKcal: i.processedKcal ?? 0,
+    mealCount: i.mealCount,
+  });
+}
+
 export function computeAreasForDay(i: DayAreaInputs): Partial<Record<AreaKey, AreaResult>> {
-  const nutritionAdh =
-    i.goals && i.mealCount > 0
-      ? Math.round(
-          (Math.min(100, (i.totals.kcal / (i.goals.kcal || 1)) * 100) +
-            Math.min(100, (i.totals.protein / (i.goals.protein || 1)) * 100)) /
-            2
-        )
-      : 0;
+  const nutri = nutritionAreaFor(i);
   const doneCount = i.habits.filter((h) => h.done).length;
 
   return {
-    nutrition: { value: nutritionAdh, hasData: i.mealCount > 0 },
+    nutrition: { value: nutri.total, hasData: i.mealCount > 0 },
     habits: {
       value: i.habits.length ? (doneCount / i.habits.length) * 100 : 0,
       hasData: i.habits.length > 0,

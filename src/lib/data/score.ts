@@ -16,6 +16,7 @@ import {
   type DayScore,
 } from "@/lib/calculations/scoring";
 import type { ServerClient } from "@/lib/supabase/server";
+import { dayFoodFacts } from "./nutrition-day";
 
 /** Persiste un DayScore ya calculado. No escribe si el día no tiene datos. */
 export async function upsertDayScore(
@@ -45,38 +46,33 @@ export async function upsertDayScore(
 
 /** Recalcula el score de un día desde la DB y lo materializa. */
 export async function materializeDayScore(supabase: ServerClient, userId: string, date: string) {
-  const [goalsRes, mealsRes, habitsRes, entriesRes, logRes, settingsRes] = await Promise.all([
+  const [goalsRes, facts, habitsRes, entriesRes, logRes, settingsRes] = await Promise.all([
     supabase
       .from("nutrition_goals")
-      .select("kcal, protein_g")
+      .select("kcal, protein_g, water_ml")
       .eq("user_id", userId)
       .order("effective_from", { ascending: false })
       .limit(1),
-    supabase.from("meals").select("id, meal_items(kcal, protein_g)").eq("user_id", userId).eq("log_date", date),
+    dayFoodFacts(supabase, userId, date),
     supabase.from("habits").select("id").eq("user_id", userId).eq("active", true),
     supabase.from("habit_entries").select("habit_id, done").eq("user_id", userId).eq("log_date", date),
-    supabase.from("daily_logs").select("sleep_quality").eq("user_id", userId).eq("log_date", date).maybeSingle(),
+    supabase.from("daily_logs").select("sleep_quality, water_ml").eq("user_id", userId).eq("log_date", date).maybeSingle(),
     supabase.from("user_settings").select("*").eq("user_id", userId).maybeSingle(),
   ]);
 
   const goalRow = goalsRes.data?.[0] ?? null;
-  const meals = mealsRes.data ?? [];
   const activeHabits = habitsRes.data ?? [];
   const entryByHabit = new Map((entriesRes.data ?? []).map((e) => [e.habit_id, e.done ?? false]));
 
-  let kcal = 0;
-  let protein = 0;
-  meals.forEach((m) =>
-    (m.meal_items ?? []).forEach((it) => {
-      kcal += Number(it.kcal);
-      protein += Number(it.protein_g);
-    })
-  );
-
   const areas = computeAreasForDay({
-    totals: { kcal, protein },
-    mealCount: meals.length,
+    totals: { kcal: facts.kcal, protein: facts.protein },
+    mealCount: facts.mealCount,
     goals: goalRow ? { kcal: goalRow.kcal, protein: goalRow.protein_g } : null,
+    waterL: (logRes.data?.water_ml ?? 0) / 1000,
+    waterGoalL: (goalRow?.water_ml ?? 0) / 1000,
+    vegetableServings: facts.vegetableServings,
+    fruitServings: facts.fruitServings,
+    processedKcal: facts.processedKcal,
     // Solo hábitos ACTIVOS: los archivados no puntúan aunque tengan entry.
     habits: activeHabits.map((h) => ({ done: entryByHabit.get(h.id) ?? false })),
     sleepQuality: logRes.data?.sleep_quality ?? null,

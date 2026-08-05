@@ -37,6 +37,8 @@ export interface DefaultFood {
   carbs: number;
   fat: number;
   fiber?: number;
+  /** Ultraprocesado: baja el índice de calidad del día. Ante la duda, false. */
+  isProcessed?: boolean;
   /** Cómo se cuenta: "huevo", "lata", "pote", "cda"… */
   unitLabel?: string;
   /** Cuántos gramos pesa una unidad. */
@@ -71,8 +73,8 @@ export const DEFAULT_FOODS: DefaultFood[] = [
   { name: "Cerdo magro", category: "proteinas", base: "100g", kcal: 143, protein: 21, carbs: 0, fat: 6 },
   { name: "Merluza", category: "proteinas", base: "100g", kcal: 82, protein: 17.5, carbs: 0, fat: 1 },
   { name: "Salmón", category: "proteinas", base: "100g", kcal: 208, protein: 20, carbs: 0, fat: 13 },
-  { name: "Jamón cocido natural", category: "proteinas", base: "100g", kcal: 110, protein: 19, carbs: 1.5, fat: 3, unitLabel: "feta", unitGrams: 25 },
-  { name: "Proteína en polvo", category: "proteinas", base: "100g", kcal: 400, protein: 80, carbs: 10, fat: 5, unitLabel: "scoop", unitGrams: 30, favorite: true },
+  { name: "Jamón cocido natural", category: "proteinas", base: "100g", kcal: 110, protein: 19, carbs: 1.5, fat: 3, unitLabel: "feta", unitGrams: 25, isProcessed: true },
+  { name: "Proteína en polvo", category: "proteinas", base: "100g", kcal: 400, protein: 80, carbs: 10, fat: 5, unitLabel: "scoop", unitGrams: 30, favorite: true, isProcessed: true },
 
   // ---------- 🍚 Carbohidratos ----------
   { name: "Arroz blanco", category: "carbohidratos", base: "100g", kcal: 358, protein: 7, carbs: 79, fat: 0.6, fiber: 1.3, state: "crudo" },
@@ -140,8 +142,8 @@ export const DEFAULT_FOODS: DefaultFood[] = [
   // ---------- 🥜 Grasas saludables ----------
   { name: "Palta", category: "grasas", base: "100g", kcal: 160, protein: 2, carbs: 8.5, fat: 14.7, fiber: 6.7, unitLabel: "unidad", unitGrams: 150, favorite: true },
   { name: "Aceite de oliva", category: "grasas", base: "100ml", kcal: 884, protein: 0, carbs: 0, fat: 100, unitLabel: "cda", unitGrams: 10, favorite: true, isDressing: true, defaultQty: 10 },
-  { name: "Mayonesa", category: "grasas", base: "100g", kcal: 680, protein: 1, carbs: 1.5, fat: 75, unitLabel: "cda", unitGrams: 15, isDressing: true, defaultQty: 15 },
-  { name: "Mayonesa light", category: "grasas", base: "100g", kcal: 260, protein: 1, carbs: 9, fat: 24, unitLabel: "cda", unitGrams: 15, isDressing: true, defaultQty: 15 },
+  { name: "Mayonesa", category: "grasas", base: "100g", kcal: 680, protein: 1, carbs: 1.5, fat: 75, unitLabel: "cda", unitGrams: 15, isDressing: true, defaultQty: 15, isProcessed: true },
+  { name: "Mayonesa light", category: "grasas", base: "100g", kcal: 260, protein: 1, carbs: 9, fat: 24, unitLabel: "cda", unitGrams: 15, isDressing: true, defaultQty: 15, isProcessed: true },
   { name: "Almendras", category: "grasas", base: "100g", kcal: 579, protein: 21, carbs: 22, fat: 50, fiber: 12.5, unitLabel: "puñado", unitGrams: 25 },
   { name: "Nueces", category: "grasas", base: "100g", kcal: 654, protein: 15, carbs: 14, fat: 65, fiber: 6.7, unitLabel: "puñado", unitGrams: 25 },
   { name: "Maní", category: "grasas", base: "100g", kcal: 567, protein: 25.8, carbs: 16, fat: 49, fiber: 8.5, unitLabel: "puñado", unitGrams: 25 },
@@ -155,8 +157,8 @@ export const DEFAULT_FOODS: DefaultFood[] = [
   { name: "Yogur natural", category: "lacteos", base: "100g", kcal: 61, protein: 3.5, carbs: 4.7, fat: 3.3, unitLabel: "pote", unitGrams: 190 },
   { name: "Yogur griego", category: "lacteos", base: "100g", kcal: 97, protein: 9, carbs: 4, fat: 5, unitLabel: "pote", unitGrams: 150 },
   { name: "Yogur proteico", category: "lacteos", base: "100g", kcal: 60, protein: 10, carbs: 4, fat: 0.3, unitLabel: "pote", unitGrams: 150, favorite: true },
-  { name: "Queso crema light", category: "lacteos", base: "100g", kcal: 160, protein: 8, carbs: 5, fat: 12, unitLabel: "cda", unitGrams: 15 },
-  { name: "Queso crema común", category: "lacteos", base: "100g", kcal: 342, protein: 6, carbs: 4, fat: 34, unitLabel: "cda", unitGrams: 15 },
+  { name: "Queso crema light", category: "lacteos", base: "100g", kcal: 160, protein: 8, carbs: 5, fat: 12, unitLabel: "cda", unitGrams: 15, isProcessed: true },
+  { name: "Queso crema común", category: "lacteos", base: "100g", kcal: 342, protein: 6, carbs: 4, fat: 34, unitLabel: "cda", unitGrams: 15, isProcessed: true },
   { name: "Queso port salut light", category: "lacteos", base: "100g", kcal: 230, protein: 24, carbs: 2, fat: 14, unitLabel: "feta", unitGrams: 30 },
   { name: "Queso cremoso", category: "lacteos", base: "100g", kcal: 300, protein: 18, carbs: 3, fat: 24, unitLabel: "feta", unitGrams: 30 },
   { name: "Queso rallado", category: "lacteos", base: "100g", kcal: 431, protein: 38, carbs: 4, fat: 29, unitLabel: "cda", unitGrams: 8 },
@@ -180,11 +182,11 @@ export const DEFAULT_FOODS: DefaultFood[] = [
   { name: "Limón", category: "condimentos", base: "100g", kcal: 29, protein: 1.1, carbs: 9, fat: 0.3, unitLabel: "unidad", unitGrams: 60, isDressing: true, defaultQty: 15 },
 
   // ---------- 🍯 Otros ----------
-  { name: "Gelatina light", category: "otros", base: "100g", kcal: 8, protein: 1.2, carbs: 0.6, fat: 0, unitLabel: "pote", unitGrams: 120 },
+  { name: "Gelatina light", category: "otros", base: "100g", kcal: 8, protein: 1.2, carbs: 0.6, fat: 0, unitLabel: "pote", unitGrams: 120, isProcessed: true },
   { name: "Cacao 100%", category: "otros", base: "100g", kcal: 228, protein: 20, carbs: 58, fat: 14, fiber: 33, unitLabel: "cda", unitGrams: 6 },
   { name: "Café", category: "otros", base: "100ml", kcal: 2, protein: 0.1, carbs: 0, fat: 0, unitLabel: "taza", unitGrams: 200 },
-  { name: "Edulcorante", category: "otros", base: "100g", kcal: 0, protein: 0, carbs: 0, fat: 0 },
-  { name: "Stevia", category: "otros", base: "100g", kcal: 0, protein: 0, carbs: 0, fat: 0 },
-  { name: "Mermelada light", category: "otros", base: "100g", kcal: 140, protein: 0.4, carbs: 34, fat: 0.1, unitLabel: "cda", unitGrams: 20 },
+  { name: "Edulcorante", category: "otros", base: "100g", kcal: 0, protein: 0, carbs: 0, fat: 0, isProcessed: true },
+  { name: "Stevia", category: "otros", base: "100g", kcal: 0, protein: 0, carbs: 0, fat: 0, isProcessed: true },
+  { name: "Mermelada light", category: "otros", base: "100g", kcal: 140, protein: 0.4, carbs: 34, fat: 0.1, unitLabel: "cda", unitGrams: 20, isProcessed: true },
   { name: "Miel", category: "otros", base: "100g", kcal: 304, protein: 0.3, carbs: 82, fat: 0, unitLabel: "cda", unitGrams: 21 },
 ];
