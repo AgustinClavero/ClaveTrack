@@ -4,8 +4,10 @@ import { useState, useTransition } from "react";
 import { Check, Minus, Plus } from "lucide-react";
 import type { Habit } from "@/types";
 import { toggleHabit, setHabitValue } from "@/app/actions";
+import { useActiveDay } from "@/lib/hooks/use-active-day";
 import { Ring } from "@/components/ui/Ring";
 import { nf } from "@/lib/utils";
+import { habitAccent } from "@/lib/habit-accent";
 
 /** Paso de incremento según la unidad. */
 function stepFor(h: Habit): number {
@@ -20,40 +22,37 @@ const decimalsFor = (h: Habit) => (["l", "h"].includes(h.unit.toLowerCase()) ? 1
 
 const GLASS_L = 0.25;
 
-/** Color del anillo: primero por lo que mide, luego por su categoría. */
-function accentOf(h: Habit): { color: string; track: string } {
-  const u = h.unit.toLowerCase();
-  if (u === "l") return { color: "var(--blue)", track: "var(--blue-tint)" };
-  if (u.includes("paso") || u === "km") return { color: "var(--blue)", track: "var(--blue-tint)" };
-  if (u === "h" || /dorm|sue/i.test(h.name)) return { color: "var(--blue)", track: "var(--blue-tint)" };
-  if (u === "min" || u === "x/sem") return { color: "var(--amber)", track: "var(--amber-tint)" };
-  if (h.category === "nutrition") return { color: "var(--red)", track: "var(--red-tint)" };
-  if (h.category === "activity") return { color: "var(--blue)", track: "var(--blue-tint)" };
-  if (h.category === "mind") return { color: "var(--success)", track: "var(--surface-2)" };
-  return { color: "var(--amber)", track: "var(--amber-tint)" };
-}
-
 /**
  * Card de hábito del día: anillo de progreso contra el objetivo y el control
  * de carga que corresponda. Sin historial: acá solo importa hoy.
  */
 export function HabitCard({ habit, readOnly = false }: { habit: Habit; readOnly?: boolean }) {
+  const date = useActiveDay();
   const [h, setH] = useState(habit);
   const [, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+
+  // Cuando el servidor trae un valor distinto al que mandó la última vez
+  // (por ejemplo, algo cargado desde el "+"), pisa el estado local.
+  const stamp = `${habit.value}:${habit.done}`;
+  const [syncedStamp, setSyncedStamp] = useState(stamp);
+  if (syncedStamp !== stamp) {
+    setSyncedStamp(stamp);
+    setH(habit);
+  }
 
   const numeric = h.kind !== "boolean" && h.target != null;
   const isWater = h.unit.toLowerCase() === "l";
   const d = decimalsFor(h);
   const pct = h.target ? Math.min(1, h.value / h.target) : h.done ? 1 : 0;
-  const accent = accentOf(h);
+  const accent = habitAccent(h);
 
   function toggle() {
     const done = !h.done;
     const prev = h;
     setH({ ...h, done });
     startTransition(async () => {
-      const res = await toggleHabit({ habitId: h.id, done });
+      const res = await toggleHabit({ habitId: h.id, done, date });
       if (!res.ok) {
         setH(prev);
         setError(res.error);
@@ -66,7 +65,7 @@ export function HabitCard({ habit, readOnly = false }: { habit: Habit; readOnly?
     const prev = h;
     setH({ ...h, value: next, done: h.target ? next >= h.target : next > 0 });
     startTransition(async () => {
-      const res = await setHabitValue({ habitId: h.id, value: next });
+      const res = await setHabitValue({ habitId: h.id, value: next, date });
       if (!res.ok) {
         setH(prev);
         setError(res.error);
@@ -101,9 +100,9 @@ export function HabitCard({ habit, readOnly = false }: { habit: Habit; readOnly?
                 </span>
               </>
             ) : h.done ? (
-              "Hecho hoy"
+              (date ? "Hecho ese día" : "Hecho hoy")
             ) : (
-              "Pendiente hoy"
+              (date ? "Pendiente ese día" : "Pendiente hoy")
             )}
           </p>
         </div>

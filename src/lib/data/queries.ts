@@ -6,10 +6,11 @@
 // - Devuelven datos crudos; el formateo visual es de los componentes.
 // ============================================================
 
-import { getServerClient, getUserContext, type UserContext } from "@/lib/data/context";
+import { getServerClient, getUserContext, resolveDay, type UserContext } from "@/lib/data/context";
 import { dayTotals } from "@/lib/calculations/macros";
 import {
   computeAreasForDay,
+  nutritionAreaFor,
   computeDay,
   levelFromXp,
   scoreLabel,
@@ -17,6 +18,9 @@ import {
   type DayScore,
 } from "@/lib/calculations/scoring";
 import { computeAchievements, dayInsights, type Achievement, type Insight } from "@/lib/calculations/insights";
+import { daySummary, type DaySummary } from "@/lib/calculations/day-summary";
+import type { NutritionResult } from "@/lib/calculations/nutrition-score";
+import { dayFoodFacts } from "./nutrition-day";
 import { addDays, dayWindow, monthGrid, recentDays, type DayCell } from "@/lib/date";
 import type { Habit, HabitCategory, Meal, MealType, NutritionGoals, WeightPoint } from "@/types";
 
@@ -38,6 +42,7 @@ const HABIT_ICON: Record<string, string> = {
   sue: "😴",
   leer: "📚",
   entren: "🏋️",
+  planific: "📋",
 };
 
 function iconFor(name: string, emoji: string | null): string {
@@ -54,11 +59,14 @@ export interface CalendarDay extends DayCell {
 export interface Checkin {
   done: boolean;
   focusNote: string | null;
+  focusDone: boolean | null;
   weightKg: number | null;
   mood: number | null;
   energy: number | null;
   sleepQuality: number | null;
+  sleepHours: number | null;
   hunger: number | null;
+  stress: number | null;
   waterMl: number;
 }
 
@@ -228,7 +236,7 @@ export async function getDashboard(): Promise<Dashboard | null> {
   // Ventana amplia: el calendario se desliza al mes anterior y al siguiente.
   const weekCells = dayWindow(45, 30, timezone);
 
-  const [goalsRes, mealsRes, habitsRes, entriesRes, lastWeightRes, logRes, historyRes] = await Promise.all([
+  const [goalsRes, mealsRes, habitsRes, entriesRes, lastWeightRes, logRes, historyRes, facts] = await Promise.all([
     supabase
       .from("nutrition_goals")
       .select("kcal, protein_g, carbs_g, fat_g, water_ml")
@@ -253,11 +261,12 @@ export async function getDashboard(): Promise<Dashboard | null> {
       .limit(1),
     supabase
       .from("daily_logs")
-      .select("mood, energy, sleep_quality, hunger, focus_note, checkin_done_at, water_ml")
+      .select("mood, energy, sleep_quality, sleep_h, hunger, stress, focus_note, focus_done, checkin_done_at, water_ml")
       .eq("user_id", ctx.userId)
       .eq("log_date", date)
       .maybeSingle(),
     getScoreHistory(ctx),
+    dayFoodFacts(supabase, ctx.userId, date),
   ]);
 
   const goalRow = goalsRes.data?.[0];
@@ -270,13 +279,23 @@ export async function getDashboard(): Promise<Dashboard | null> {
   const log = logRes.data;
 
   // ---- Score del día (mismo cálculo que la materialización) ----
-  const areas = computeAreasForDay({
+  const waterHabit = habits.find((h) => h.unit.toLowerCase() === "l");
+  const waterL = waterHabit ? waterHabit.value : (log?.water_ml ?? 0) / 1000;
+  const waterGoalL = waterHabit?.target ?? goals.waterMl / 1000;
+
+  const areaInputs = {
     totals: { kcal: totals.kcal, protein: totals.protein },
     mealCount: meals.length,
     goals: { kcal: goals.kcal, protein: goals.protein },
+    waterL,
+    waterGoalL,
+    vegetableServings: facts.vegetableServings,
+    fruitServings: facts.fruitServings,
+    processedKcal: facts.processedKcal,
     habits: habits.map((h) => ({ done: h.done })),
     sleepQuality: log?.sleep_quality ?? null,
-  });
+  };
+  const areas = computeAreasForDay(areaInputs);
   const score = computeDay(areas, ctx.weights);
   const label = scoreLabel(score.total);
   const hasToday = score.activeAreas.length > 0;
@@ -299,11 +318,17 @@ export async function getDashboard(): Promise<Dashboard | null> {
   const checkin: Checkin = {
     done: !!log?.checkin_done_at,
     focusNote: log?.focus_note ?? null,
+    focusDone: log?.focus_done ?? null,
     weightKg: lastWeightRes.data?.[0]?.weight_kg != null ? Number(lastWeightRes.data[0].weight_kg) : null,
     mood: log?.mood ?? null,
     energy: log?.energy ?? null,
     sleepQuality: log?.sleep_quality ?? null,
+    sleepHours: (() => {
+      const sh = habits.find((h) => h.unit.toLowerCase() === "h" && /dorm|sue/i.test(h.name));
+      return sh && sh.value > 0 ? sh.value : log?.sleep_h != null ? Number(log.sleep_h) : null;
+    })(),
     hunger: log?.hunger ?? null,
+    stress: log?.stress ?? null,
     waterMl: log?.water_ml ?? 0,
   };
 
@@ -332,6 +357,9 @@ export async function getDashboard(): Promise<Dashboard | null> {
 export interface NutritionDay {
   onboarded: boolean;
   date: string;
+  isToday: boolean;
+  /** "Hoy" real del servidor: tope de la navegación por fecha. */
+  todayDate: string;
   timezone: string;
   goals: NutritionGoals;
   meals: Meal[];
@@ -339,28 +367,33 @@ export interface NutritionDay {
   waterMl: number;
 }
 
-export async function getNutritionDay(): Promise<NutritionDay | null> {
+export async function getNutritionDay(day?: string): Promise<NutritionDay | null> {
   const ctx = await getUserContext();
   if (!ctx) return null;
+  const { date, isToday } = resolveDay(ctx.today, day);
   const supabase = getServerClient();
 
   const [goalsRes, mealsRes, logRes] = await Promise.all([
     supabase
       .from("nutrition_goals")
-      .select("kcal, protein_g, carbs_g, fat_g, water_ml")
+      // Metas vigentes ese día. Se traen ordenadas y se elige en memoria:
+      // si el día es anterior a la primera meta, igual se usa esa, porque
+      // "sin meta" haría rebotar la pantalla al onboarding.
+      .select("kcal, protein_g, carbs_g, fat_g, water_ml, effective_from")
       .eq("user_id", ctx.userId)
       .order("effective_from", { ascending: false })
-      .limit(1),
+      .limit(20),
     supabase
       .from("meals")
       .select("id, meal_type, eaten_at, planned, photo_path, meal_items(*)")
       .eq("user_id", ctx.userId)
-      .eq("log_date", ctx.today)
+      .eq("log_date", date)
       .order("created_at"),
-    supabase.from("daily_logs").select("water_ml").eq("user_id", ctx.userId).eq("log_date", ctx.today).maybeSingle(),
+    supabase.from("daily_logs").select("water_ml").eq("user_id", ctx.userId).eq("log_date", date).maybeSingle(),
   ]);
 
-  const goalRow = goalsRes.data?.[0];
+  const goalRows = goalsRes.data ?? [];
+  const goalRow = goalRows.find((g) => g.effective_from <= date) ?? goalRows[goalRows.length - 1];
   if (!goalRow) return { onboarded: false } as NutritionDay;
 
   const rows = (mealsRes.data ?? []) as MealRow[];
@@ -379,7 +412,9 @@ export async function getNutritionDay(): Promise<NutritionDay | null> {
 
   return {
     onboarded: true,
-    date: ctx.today,
+    date,
+    isToday,
+    todayDate: ctx.today,
     timezone: ctx.timezone,
     goals: mapGoals(goalRow),
     meals,
@@ -464,10 +499,12 @@ export async function getMealDetail(mealId: string): Promise<MealDetail | null> 
  * `categories` filtra por página temática (null = todas).
  */
 export async function getHabitsDay(
-  categories?: HabitCategory[]
-): Promise<{ date: string; timezone: string; habits: Habit[]; threshold: number; days: DayCell[] } | null> {
+  categories?: HabitCategory[],
+  day?: string
+): Promise<{ date: string; isToday: boolean; todayDate: string; timezone: string; habits: Habit[]; threshold: number; days: DayCell[] } | null> {
   const ctx = await getUserContext();
   if (!ctx) return null;
+  const { date, isToday } = resolveDay(ctx.today, day);
   const supabase = getServerClient();
   const week = recentDays(7, ctx.timezone);
   const from = week[0].date;
@@ -487,12 +524,12 @@ export async function getHabitsDay(
       .from("habit_entries")
       .select("habit_id, done, value, log_date")
       .eq("user_id", ctx.userId)
-      .gte("log_date", from)
+      .gte("log_date", from < date ? from : date)
       .lte("log_date", ctx.today),
   ]);
 
   const all = entriesRes.data ?? [];
-  const today = all.filter((e) => e.log_date === ctx.today);
+  const today = all.filter((e) => e.log_date === date);
   const habits = mapHabits((habitsRes.data ?? []) as HabitRow[], today);
 
   // Historial por hábito, alineado a los 7 días (rellena huecos con 0).
@@ -510,7 +547,7 @@ export async function getHabitsDay(
     }));
   });
 
-  return { date: ctx.today, timezone: ctx.timezone, habits, threshold: ctx.streakThreshold, days: week };
+  return { date, isToday, todayDate: ctx.today, timezone: ctx.timezone, habits, threshold: ctx.streakThreshold, days: week };
 }
 
 // ============================================================
@@ -531,6 +568,9 @@ export interface WorkoutRow {
 
 export interface ActivityDay {
   date: string;
+  isToday: boolean;
+  /** "Hoy" real del servidor: tope de la navegación por fecha. */
+  todayDate: string;
   timezone: string;
   habits: Habit[];
   /** Hábitos cuyo valor sale de las sesiones registradas, no de un stepper. */
@@ -541,20 +581,21 @@ export interface ActivityDay {
   heightCm: number | null;
 }
 
-export async function getActivityDay(): Promise<ActivityDay | null> {
+export async function getActivityDay(day?: string): Promise<ActivityDay | null> {
   const ctx = await getUserContext();
   if (!ctx) return null;
+  const { date, isToday } = resolveDay(ctx.today, day);
   const supabase = getServerClient();
   const week = recentDays(7, ctx.timezone);
   const from = week[0].date;
 
   const [habitsData, workoutsRes, weightRes] = await Promise.all([
-    getHabitsDay(["activity"]),
+    getHabitsDay(["activity"], date),
     supabase
       .from("workouts")
       .select("*")
       .eq("user_id", ctx.userId)
-      .gte("log_date", from)
+      .gte("log_date", from < date ? from : date)
       .lte("log_date", ctx.today)
       .order("created_at", { ascending: false }),
     supabase
@@ -578,7 +619,7 @@ export async function getActivityDay(): Promise<ActivityDay | null> {
     date: w.log_date,
   });
   const all = (workoutsRes.data ?? []).map(map);
-  const todayWorkouts = all.filter((w) => w.date === ctx.today);
+  const todayWorkouts = all.filter((w) => w.date === date);
 
   // Los hábitos de movimiento se alimentan de lo registrado: pasos del día
   // y sesiones de la semana (la unidad "x/sem" es semanal por definición).
@@ -599,7 +640,9 @@ export async function getActivityDay(): Promise<ActivityDay | null> {
   });
 
   return {
-    date: ctx.today,
+    date,
+    isToday,
+    todayDate: ctx.today,
     timezone: ctx.timezone,
     habits,
     autoHabitIds,
@@ -709,7 +752,10 @@ export async function buildDayDetails(from: string, to: string): Promise<DayDeta
   const out: DayDetail[] = [];
   for (let d = from; d <= to; d = addDays(d, 1)) {
     const m = byDate.get(d);
-    const items = habitRows.map((h) => {
+    // Los del mismo grupo (suplementos) van seguidos: intercalados con el
+    // resto se leen como si faltara alguno.
+    const ordered = [...habitRows].sort((a, b) => (a.group_key ?? "").localeCompare(b.group_key ?? ""));
+    const items = ordered.map((h) => {
       const e = m?.get(h.id);
       const dec = ["l", "h"].includes((h.unit ?? "").toLowerCase()) ? 1 : 0;
       return {
@@ -849,7 +895,7 @@ export async function getShellData(): Promise<ShellData | null> {
   const [logRes, lastWeightRes, history, habitsRes, entriesRes, goalsRes, mealsRes] = await Promise.all([
     supabase
       .from("daily_logs")
-      .select("mood, energy, sleep_quality, hunger, focus_note, checkin_done_at, water_ml")
+      .select("mood, energy, sleep_quality, sleep_h, hunger, stress, focus_note, focus_done, checkin_done_at, water_ml")
       .eq("user_id", ctx.userId)
       .eq("log_date", ctx.today)
       .maybeSingle(),
@@ -897,6 +943,8 @@ export async function getShellData(): Promise<ShellData | null> {
     })
   );
   const waterHabit = habits.find((h) => h.unit.toLowerCase() === "l" && /agua/i.test(h.name));
+  const sleepHabitRow = habits.find((h) => h.unit.toLowerCase() === "h" && /dorm|sue/i.test(h.name));
+  const sleepFromHabit = sleepHabitRow && sleepHabitRow.value > 0 ? sleepHabitRow.value : null;
   const alerts = dayInsights({
     score: 0,
     breakdown: {} as never,
@@ -913,16 +961,39 @@ export async function getShellData(): Promise<ShellData | null> {
     hour: new Date().getHours(),
   });
 
+  // El día cerrado se avisa acá: al pasar la medianoche, el resumen de ayer
+  // aparece en la campanita hasta que se abre.
+  const yesterday = addDays(ctx.today, -1);
+  const { count: yesterdayMeals } = await supabase
+    .from("meals")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", ctx.userId)
+    .eq("log_date", yesterday);
+  if (yesterdayMeals && yesterdayMeals > 0) {
+    alerts.unshift({
+      id: `summary-${yesterday}`,
+      emoji: "📊",
+      title: "Ver resumen del día",
+      detail: "Cerró el día de ayer. Mirá cómo te fue y qué conviene mover hoy.",
+      tone: "neutral",
+      summaryDate: yesterday,
+    });
+  }
+
   return {
     streak,
     checkin: {
       done: !!log?.checkin_done_at,
       focusNote: log?.focus_note ?? null,
+      focusDone: log?.focus_done ?? null,
       weightKg: lastWeightKg,
       mood: log?.mood ?? null,
       energy: log?.energy ?? null,
       sleepQuality: log?.sleep_quality ?? null,
+      // El hábito manda: es donde se carga desde Rutina.
+      sleepHours: sleepFromHabit ?? (log?.sleep_h != null ? Number(log.sleep_h) : null),
       hunger: log?.hunger ?? null,
+      stress: log?.stress ?? null,
       waterMl: log?.water_ml ?? 0,
     },
     lastWeightKg,
@@ -981,5 +1052,102 @@ export async function getSettingsData(): Promise<SettingsData | null> {
     goals: goalRow ? { ...mapGoals(goalRow), mode: goalRow.mode ?? "manual" } : null,
     habits: mapHabits((habitsRes.data ?? []) as HabitRow[], []),
     lastWeightKg: lastWeightRes.data?.[0]?.weight_kg != null ? Number(lastWeightRes.data[0].weight_kg) : null,
+  };
+}
+
+// ============================================================
+// Resumen de un día cualquiera (no solo hoy).
+// Lo usan la campanita al cerrar el día y el detalle del día en Progreso.
+// ============================================================
+
+export interface DaySummaryPayload {
+  date: string;
+  label: string;
+  summary: DaySummary;
+  parts: NutritionResult["parts"];
+}
+
+export async function getDaySummary(day: string): Promise<DaySummaryPayload | null> {
+  const ctx = await getUserContext();
+  if (!ctx) return null;
+  const { date } = resolveDay(ctx.today, day);
+  // El resumen es el cierre del día: mientras el día corre, no hay nada que cerrar.
+  if (date >= ctx.today) return null;
+  const supabase = getServerClient();
+
+  const [goalsRes, facts, logRes, waterHabitRes, scoresRes] = await Promise.all([
+    supabase
+      .from("nutrition_goals")
+      .select("kcal, protein_g, water_ml, effective_from")
+      .eq("user_id", ctx.userId)
+      .order("effective_from", { ascending: false })
+      .limit(20),
+    dayFoodFacts(supabase, ctx.userId, date),
+    supabase.from("daily_logs").select("water_ml").eq("user_id", ctx.userId).eq("log_date", date).maybeSingle(),
+    supabase.from("habits").select("id, unit, target_value").eq("user_id", ctx.userId).eq("active", true),
+    supabase
+      .from("daily_scores")
+      .select("log_date, total")
+      .eq("user_id", ctx.userId)
+      .lte("log_date", date)
+      .order("log_date", { ascending: false })
+      .limit(400),
+  ]);
+
+  const goalRows = goalsRes.data ?? [];
+  const goalRow = goalRows.find((g) => g.effective_from <= date) ?? goalRows[goalRows.length - 1];
+  if (!goalRow) return null;
+
+  // El agua puede venir del hábito (vasos) o del registro suelto del día.
+  const waterHabit = (waterHabitRes.data ?? []).find((h) => (h.unit ?? "").toLowerCase() === "l");
+  let waterL = (logRes.data?.water_ml ?? 0) / 1000;
+  if (waterHabit) {
+    const { data: entry } = await supabase
+      .from("habit_entries")
+      .select("value")
+      .eq("habit_id", waterHabit.id)
+      .eq("log_date", date)
+      .maybeSingle();
+    waterL = Number(entry?.value ?? 0);
+  }
+  const waterGoalL = waterHabit?.target_value != null ? Number(waterHabit.target_value) : goalRow.water_ml / 1000;
+
+  const nutrition = nutritionAreaFor({
+    totals: { kcal: facts.kcal, protein: facts.protein },
+    mealCount: facts.mealCount,
+    goals: { kcal: goalRow.kcal, protein: goalRow.protein_g },
+    waterL,
+    waterGoalL,
+    vegetableServings: facts.vegetableServings,
+    fruitServings: facts.fruitServings,
+    processedKcal: facts.processedKcal,
+    habits: [],
+    sleepQuality: null,
+  });
+
+  const scoreByDate = new Map((scoresRes.data ?? []).map((r) => [r.log_date, r.total]));
+  const streak = computeStreak(scoreByDate, date, ctx.streakThreshold);
+  const dayTotal = scoreByDate.get(date) ?? null;
+
+  return {
+    date,
+    label: new Intl.DateTimeFormat("es-AR", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }).format(
+      new Date(date + "T12:00:00Z")
+    ),
+    summary: daySummary({
+      nutrition,
+      kcal: facts.kcal,
+      kcalGoal: goalRow.kcal,
+      protein: facts.protein,
+      proteinGoal: goalRow.protein_g,
+      waterL,
+      waterGoalL,
+      vegetableServings: facts.vegetableServings,
+      fruitServings: facts.fruitServings,
+      mealCount: facts.mealCount,
+      streak,
+      dayTotal,
+    }),
+    parts: nutrition.parts,
   };
 }

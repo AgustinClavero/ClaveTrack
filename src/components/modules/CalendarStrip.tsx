@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { Ring } from "@/components/ui/Ring";
+import { useUIStore } from "@/lib/store";
 import type { CalendarDay } from "@/lib/data/queries";
 
 /**
@@ -10,6 +11,7 @@ import type { CalendarDay } from "@/lib/data/queries";
  * el resto son anillos oscuros sobre fondo claro.
  */
 export function CalendarStrip({ days }: { days: CalendarDay[] }) {
+  const openDayDetail = useUIStore((s) => s.openDayDetail);
   const scrollRef = useRef<HTMLDivElement>(null);
   const todayRef = useRef<HTMLButtonElement>(null);
 
@@ -57,6 +59,9 @@ export function CalendarStrip({ days }: { days: CalendarDay[] }) {
               className={`cday${d.isToday ? " today" : ""}${d.isFuture ? " future" : ""}`}
               aria-current={d.isToday ? "date" : undefined}
               aria-label={`${d.weekday} ${d.dayNum} de ${d.monthShort}${d.score != null ? `, ${d.score}%` : ""}`}
+              // Los días futuros no tienen nada que mostrar todavía.
+              disabled={d.isFuture}
+              onClick={() => openDayDetail(d.date)}
             >
               <span className="cdm">{showMonth ? d.monthShort : ""}</span>
               <span className="cdn">{d.weekday}</span>
@@ -66,7 +71,8 @@ export function CalendarStrip({ days }: { days: CalendarDay[] }) {
                   stroke={4}
                   value={pct}
                   color={d.isToday ? "var(--ink-contrast)" : "var(--ink)"}
-                  track={d.isToday ? "rgba(255,255,255,0.28)" : "var(--surface-2)"}
+                  // Sin el recuadro blanco detrás, --surface-2 se pierde contra el fondo.
+                  track={d.isToday ? "rgba(255,255,255,0.28)" : "var(--line-strong)"}
                 >
                   <span className="cdnum">{d.dayNum}</span>
                 </Ring>

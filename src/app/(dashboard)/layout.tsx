@@ -6,7 +6,10 @@ import { CheckinSheet } from "@/components/shell/CheckinSheet";
 import { MealSheet } from "@/components/modules/MealSheet";
 import { WeightSheet } from "@/components/modules/WeightSheet";
 import { WorkoutSheet } from "@/components/modules/WorkoutSheet";
-import { HabitSheet } from "@/components/modules/HabitSheet";
+import { RoutineSheet } from "@/components/modules/RoutineSheet";
+import { NutritionSheet } from "@/components/modules/NutritionSheet";
+import { DaySummarySheet } from "@/components/modules/DaySummarySheet";
+import { DayDetailSheet } from "@/components/modules/DayDetailSheet";
 import { MobileHeader } from "@/components/shell/MobileHeader";
 import { getShellData } from "@/lib/data/queries";
 
@@ -27,7 +30,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <MealSheet proteinToday={shell.proteinToday} proteinGoal={shell.proteinGoal} />
       <WeightSheet current={shell.lastWeightKg} />
       <WorkoutSheet weightKg={shell.lastWeightKg ?? 0} heightCm={shell.heightCm} />
-      <HabitSheet habits={shell.habits} />
+      <RoutineSheet habits={shell.habits} />
+      <NutritionSheet habits={shell.habits} />
+      <DaySummarySheet />
+      <DayDetailSheet />
     </div>
   );
 }

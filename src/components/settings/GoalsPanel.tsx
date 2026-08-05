@@ -173,7 +173,7 @@ export function GoalsPanel({
           </span>
           <span>
             <span className="dotk" style={{ background: "var(--amber)" }} />
-            🍜 Carbos {Math.round((num(f.carbsG) * 4 * 100) / (kcalFromMacros || 1))}%
+            🍝 Carbos {Math.round((num(f.carbsG) * 4 * 100) / (kcalFromMacros || 1))}%
           </span>
           <span>
             <span className="dotk" style={{ background: "var(--blue)" }} />
@@ -186,7 +186,7 @@ export function GoalsPanel({
             [
               ["kcal", "🔥 Calorías", "kcal"],
               ["proteinG", "🍗 Proteína", "g"],
-              ["carbsG", "🍜 Carbos", "g"],
+              ["carbsG", "🍝 Carbos", "g"],
               ["fatG", "🥑 Grasa", "g"],
               ["waterMl", "💧 Agua", "ml"],
             ] as const

@@ -114,6 +114,8 @@ export type Database = {
           mood: number | null
           score: number | null
           sleep_h: number | null
+          stress: number | null
+          focus_done: boolean | null
           sleep_quality: number | null
           updated_at: string | null
           user_id: string
@@ -130,6 +132,8 @@ export type Database = {
           mood?: number | null
           score?: number | null
           sleep_h?: number | null
+          stress?: number | null
+          focus_done?: boolean | null
           sleep_quality?: number | null
           updated_at?: string | null
           user_id: string
@@ -146,6 +150,8 @@ export type Database = {
           mood?: number | null
           score?: number | null
           sleep_h?: number | null
+          stress?: number | null
+          focus_done?: boolean | null
           sleep_quality?: number | null
           updated_at?: string | null
           user_id?: string
@@ -203,6 +209,7 @@ export type Database = {
           is_dressing: boolean
           is_favorite: boolean
           is_mix: boolean
+          is_processed: boolean
           kcal: number
           name: string
           protein_g: number
@@ -227,6 +234,7 @@ export type Database = {
           is_dressing?: boolean
           is_favorite?: boolean
           is_mix?: boolean
+          is_processed?: boolean
           kcal?: number
           name: string
           protein_g?: number
@@ -251,6 +259,7 @@ export type Database = {
           is_dressing?: boolean
           is_favorite?: boolean
           is_mix?: boolean
+          is_processed?: boolean
           kcal?: number
           name?: string
           protein_g?: number

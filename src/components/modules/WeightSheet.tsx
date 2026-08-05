@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import { useUIStore } from "@/lib/store";
 import { Sheet } from "@/components/shell/Sheet";
 import { saveWeight } from "@/app/actions";
+import { useActiveDay } from "@/lib/hooks/use-active-day";
 
 /** Alta rápida de peso desde el botón "+". */
 export function WeightSheet({ current }: { current: number | null }) {
   const open = useUIStore((s) => s.activeSheet === "weight");
   const closeSheet = useUIStore((s) => s.closeSheet);
   const router = useRouter();
+  const date = useActiveDay();
   const [pending, startTransition] = useTransition();
   const [kg, setKg] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +31,7 @@ export function WeightSheet({ current }: { current: number | null }) {
     }
     setError(null);
     startTransition(async () => {
-      const res = await saveWeight({ kg: val });
+      const res = await saveWeight({ kg: val, date });
       if (!res.ok) {
         setError(res.error);
         return;

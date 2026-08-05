@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Minus, Plus } from "lucide-react";
 import type { Habit } from "@/types";
 import { toggleHabit, setHabitValue } from "@/app/actions";
+import { useActiveDay } from "@/lib/hooks/use-active-day";
 import { nf } from "@/lib/utils";
 
 /** Paso de incremento según la unidad del hábito. */
@@ -19,6 +20,7 @@ function stepFor(h: Habit): number {
 const decimalsFor = (h: Habit) => (h.unit.toLowerCase() === "l" || h.unit.toLowerCase() === "h" ? 1 : 0);
 
 export function HabitList({ initial }: { initial: Habit[] }) {
+  const date = useActiveDay();
   const [habits, setHabits] = useState(initial);
   const [, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +30,7 @@ export function HabitList({ initial }: { initial: Habit[] }) {
     const prev = habits;
     setHabits((hs) => hs.map((x) => (x.id === h.id ? { ...x, done } : x)));
     startTransition(async () => {
-      const res = await toggleHabit({ habitId: h.id, done });
+      const res = await toggleHabit({ habitId: h.id, done, date });
       if (!res.ok) {
         setHabits(prev); // rollback: la UI no miente
         setError(res.error);
@@ -44,7 +46,7 @@ export function HabitList({ initial }: { initial: Habit[] }) {
       hs.map((x) => (x.id === h.id ? { ...x, value: next, done: target ? next >= target : next > 0 } : x))
     );
     startTransition(async () => {
-      const res = await setHabitValue({ habitId: h.id, value: next });
+      const res = await setHabitValue({ habitId: h.id, value: next, date });
       if (!res.ok) {
         setHabits(prev);
         setError(res.error);

@@ -15,8 +15,9 @@ import { SwipeDeck } from "@/components/modules/SwipeDeck";
 
 export const dynamic = "force-dynamic";
 
-export default async function NutritionPage() {
-  const [d, habitsData] = await Promise.all([getNutritionDay(), getHabitsDay(["nutrition"])]);
+export default async function NutritionPage({ searchParams }: { searchParams: { d?: string } }) {
+  const day = searchParams?.d;
+  const [d, habitsData] = await Promise.all([getNutritionDay(day), getHabitsDay(["nutrition"], day)]);
   if (!d) redirect("/login");
   if (!d.onboarded) redirect("/onboarding");
 
@@ -31,7 +32,7 @@ export default async function NutritionPage() {
       <header className="screen-head">
         <div>
           <h1 className="screen-title">Nutrición</h1>
-          <PageDate date={d.date} timezone={d.timezone} />
+          <PageDate date={d.date} timezone={d.timezone} today={d.todayDate} isToday={d.isToday} />
         </div>
         <Link href="/settings" className="head-action">
           <Settings size={17} />
@@ -57,7 +58,7 @@ export default async function NutritionPage() {
             </div>
             <div className="macro-cards">
               <MacroCard label="Proteína" value={totals.protein} goal={goals.protein} emoji="🍗" color="var(--red)" tint="var(--red-tint)" />
-              <MacroCard label="Carbos" value={totals.carbs} goal={goals.carbs} emoji="🍜" color="var(--amber)" tint="var(--amber-tint)" />
+              <MacroCard label="Carbos" value={totals.carbs} goal={goals.carbs} emoji="🍝" color="var(--amber)" tint="var(--amber-tint)" />
               <MacroCard label="Grasa" value={totals.fat} goal={goals.fat} emoji="🥑" color="var(--blue)" tint="var(--blue-tint)" />
             </div>
           </div>
@@ -68,7 +69,7 @@ export default async function NutritionPage() {
             <div className="cat-habits">
               <div className="habit-grid">
                 {otherHabits.map((h) => (
-                  <HabitCard key={h.id} habit={h} />
+                  <HabitCard key={`${d.date}:${h.id}`} habit={h} />
                 ))}
               </div>
             </div>
@@ -84,13 +85,13 @@ export default async function NutritionPage() {
 
         <div className="nut-meals">
           <div className="sec-head">
-            <span className="eyebrow">Registrado hoy</span>
+            <span className="eyebrow">{d.isToday ? "Registrado hoy" : "Registrado ese día"}</span>
             <AddMealButton />
           </div>
 
           {meals.length === 0 ? (
             <div className="card empty-card">
-              <p>Todavía no registraste nada hoy.</p>
+              <p>{d.isToday ? "Todavía no registraste nada hoy." : "Ese día quedó sin registrar. Todavía podés completarlo."}</p>
               <AddMealButton variant="solid" label="Registrar mi primera comida" />
             </div>
           ) : (

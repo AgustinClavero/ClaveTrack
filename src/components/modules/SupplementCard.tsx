@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Check, Settings } from "lucide-react";
 import { toggleHabit } from "@/app/actions";
+import { useActiveDay } from "@/lib/hooks/use-active-day";
 import { Ring } from "@/components/ui/Ring";
 import type { Habit } from "@/types";
 
@@ -12,7 +13,17 @@ import type { Habit } from "@/types";
  * de cada uno. Los suplementos se definen en Ajustes.
  */
 export function SupplementCard({ items }: { items: Habit[] }) {
+  const date = useActiveDay();
   const [local, setLocal] = useState(items);
+
+  // Igual que en las cards de hábito: lo cargado desde el "+" tiene que
+  // verse acá sin recargar.
+  const stamp = items.map((i) => `${i.id}:${i.done}`).join();
+  const [syncedStamp, setSyncedStamp] = useState(stamp);
+  if (syncedStamp !== stamp) {
+    setSyncedStamp(stamp);
+    setLocal(items);
+  }
   const [, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -23,7 +34,7 @@ export function SupplementCard({ items }: { items: Habit[] }) {
     const done = !h.done;
     setLocal((hs) => hs.map((x) => (x.id === h.id ? { ...x, done } : x)));
     startTransition(async () => {
-      const res = await toggleHabit({ habitId: h.id, done });
+      const res = await toggleHabit({ habitId: h.id, done, date });
       if (!res.ok) {
         setLocal((hs) => hs.map((x) => (x.id === h.id ? { ...x, done: h.done } : x)));
         setError(res.error);
@@ -64,7 +75,7 @@ export function SupplementCard({ items }: { items: Habit[] }) {
             {taken}
             <small>/{local.length}</small>
           </div>
-          <div className="sup-sub">{taken === local.length ? "Todos tomados hoy" : `Faltan ${local.length - taken}`}</div>
+          <div className="sup-sub">{taken === local.length ? (date ? "Todos tomados" : "Todos tomados hoy") : `Faltan ${local.length - taken}`}</div>
         </div>
         <Link href="/settings" className="mr-del" aria-label="Gestionar suplementos">
           <Settings size={16} />

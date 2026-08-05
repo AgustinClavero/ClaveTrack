@@ -14,8 +14,8 @@ export const dynamic = "force-dynamic";
 /** Meta semanal de minutos de actividad (recomendación OMS). */
 const WEEKLY_MIN_GOAL = 150;
 
-export default async function ActivityPage() {
-  const d = await getActivityDay();
+export default async function ActivityPage({ searchParams }: { searchParams: { d?: string } }) {
+  const d = await getActivityDay(searchParams?.d);
   if (!d) redirect("/login");
 
   const todayKcal = d.today.reduce((s, w) => s + w.kcal, 0);
@@ -29,16 +29,16 @@ export default async function ActivityPage() {
       <header className="screen-head">
         <div>
           <h1 className="screen-title">Actividad</h1>
-          <PageDate date={d.date} timezone={d.timezone} />
+          <PageDate date={d.date} timezone={d.timezone} today={d.todayDate} isToday={d.isToday} />
         </div>
         <AddWorkoutButton label="Registrar sesión" />
       </header>
 
       <div className="nut-grid">
-        {/* ---- Hoy ---- */}
+        {/* ---- Resumen del día ---- */}
         <div className="card cal-hero">
           <div>
-            <span className="eyebrow">Quemado hoy</span>
+            <span className="eyebrow">{d.isToday ? "Quemado hoy" : "Quemado ese día"}</span>
             <div className="cal-num">
               {nf(todayKcal)}
               <small>kcal</small>
@@ -46,7 +46,9 @@ export default async function ActivityPage() {
             <div className="cal-lbl">
               {todayMin > 0
                 ? `${todayMin} min${todaySteps ? ` · ${nf(todaySteps)} pasos` : ""}`
-                : "Todavía no te moviste hoy"}
+                : d.isToday
+                  ? "Todavía no te moviste hoy"
+                  : "Ese día no registraste movimiento"}
             </div>
           </div>
           <Ring size={84} stroke={9} value={Math.min(1, todayMin / 45)} color="var(--red)" track="var(--red-tint)" centerFontSize={24}>
@@ -57,7 +59,7 @@ export default async function ActivityPage() {
         {d.habits.length > 0 && (
           <div className="cat-habits">
             <div className="sec-head">
-              <span className="eyebrow">Tus objetivos de hoy</span>
+              <span className="eyebrow">Tus objetivos</span>
               <Link href="/settings" className="head-action">
                 <Settings size={16} />
                 <span>Objetivos</span>
@@ -65,7 +67,7 @@ export default async function ActivityPage() {
             </div>
             <div className="habit-grid">
               {d.habits.map((h) => (
-                <HabitCard key={h.id} habit={h} readOnly={d.autoHabitIds.includes(h.id)} />
+                <HabitCard key={`${d.date}:${h.id}`} habit={h} readOnly={d.autoHabitIds.includes(h.id)} />
               ))}
             </div>
           </div>
@@ -73,7 +75,7 @@ export default async function ActivityPage() {
 
         <div className="nut-meals">
           <div className="sec-head">
-            <span className="eyebrow">Sesiones de hoy</span>
+            <span className="eyebrow">{d.isToday ? "Sesiones de hoy" : "Sesiones de ese día"}</span>
             <AddWorkoutButton />
           </div>
           {d.today.length === 0 ? (

@@ -16,6 +16,7 @@ import {
   type FoodHit,
   type FoodPickerData,
 } from "@/app/actions";
+import { useActiveDay } from "@/lib/hooks/use-active-day";
 import { uploadMealPhoto } from "@/lib/upload";
 import { nf } from "@/lib/utils";
 
@@ -56,6 +57,7 @@ export function MealSheet({ proteinToday = 0, proteinGoal = 0 }: { proteinToday?
   const open = useUIStore((s) => s.activeSheet === "meal");
   const closeSheet = useUIStore((s) => s.closeSheet);
   const router = useRouter();
+  const date = useActiveDay();
   const [pending, startTransition] = useTransition();
 
   const [mealType, setMealType] = useState<string>("almuerzo");
@@ -160,6 +162,7 @@ export function MealSheet({ proteinToday = 0, proteinGoal = 0 }: { proteinToday?
     startTransition(async () => {
       const res = await logMeal({
         mealType,
+        date,
         photoPath: photo?.path ?? null,
         items: items.map((d) => ({ kind: "food" as const, foodId: d.food.id, quantity: d.grams })),
       });
@@ -195,7 +198,7 @@ export function MealSheet({ proteinToday = 0, proteinGoal = 0 }: { proteinToday?
   function useRecipe(recipeId: string) {
     setError(null);
     startTransition(async () => {
-      const res = await logRecipe({ recipeId, mealType });
+      const res = await logRecipe({ recipeId, mealType, date });
       if (!res.ok) {
         setError(res.error);
         return;
@@ -580,7 +583,7 @@ function QuantityStep({
           <b>{nf(m.protein, 1)} g</b>
         </div>
         <div className="qm">
-          <span>🍜 Carbos</span>
+          <span>🍝 Carbos</span>
           <b>{nf(m.carbs, 1)} g</b>
         </div>
         <div className="qm">

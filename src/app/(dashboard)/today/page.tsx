@@ -2,11 +2,15 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getDashboard } from "@/lib/data/queries";
 import { nf } from "@/lib/utils";
+import { addDays } from "@/lib/date";
+import { habitAccent } from "@/lib/habit-accent";
+import { scoreColor, scoreTint } from "@/lib/score-color";
 import { Ring } from "@/components/ui/Ring";
+import { SwipeDeck } from "@/components/modules/SwipeDeck";
 import { CalendarStrip } from "@/components/modules/CalendarStrip";
+import { YesterdaySummaryCard } from "@/components/modules/YesterdaySummaryCard";
 import { AreaStrip } from "@/components/modules/AreaStrip";
 import { MacroCard } from "@/components/modules/MacroCard";
-import { AddMealButton } from "@/components/modules/AddMealButton";
 import { FocusEditor } from "@/components/modules/FocusEditor";
 import { InsightList } from "@/components/modules/InsightList";
 import { dayInsights } from "@/lib/calculations/insights";
@@ -63,6 +67,14 @@ export default async function TodayPage() {
     hour: new Date().getHours(),
   });
 
+  const yesterday = addDays(d.date, -1);
+  const yesterdayLabel = new Intl.DateTimeFormat("es-AR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  }).format(new Date(yesterday + "T12:00:00Z"));
+
   return (
     <section className="dash">
       <header className="greet">
@@ -72,84 +84,83 @@ export default async function TodayPage() {
         </p>
       </header>
 
-      <CalendarStrip days={calendar} />
-
       <div className="dash-grid">
-        {/* Héroe: cumplimiento del día */}
-        <div className="card d-hero">
-          <Ring size={116} stroke={12} value={score.total / 100} color="var(--ink)" centerFontSize={28}>
-            <b className="num">{score.total}%</b>
-          </Ring>
-          <div className="hm">
-            <span className="badge">{label}</span>
-            <div className="eyebrow">Cumplimiento del día</div>
-            <div className="big">{score.total}%</div>
-            <p className="hero-hint">{heroHint(score.total, hasData, pendingHabits, meals.length)}</p>
+        <CalendarStrip days={calendar} />
+
+        {/* Lo troncal del día en un carrusel: en móvil sería scroll puro. */}
+        <SwipeDeck labels={["Cumplimiento", "Tu constancia", "Áreas de hoy"]}>
+          <div className="card d-hero">
+            <div className="dh-top">
+              {/* El porcentaje va solo en el anillo: repetirlo al lado sobraba. */}
+              <Ring size={92} stroke={10} value={score.total / 100} color={scoreColor(score.total)} track={scoreTint(score.total)} centerFontSize={22}>
+                <b className="num">{score.total}%</b>
+              </Ring>
+              <div className="hm">
+                <span className="badge">{label}</span>
+                <div className="eyebrow">Cumplimiento del día</div>
+                <p className="hero-hint">{heroHint(score.total, hasData, pendingHabits, meals.length)}</p>
+              </div>
+            </div>
+            {/* El foco va a todo el ancho: en la columna quedaba en cuatro líneas. */}
             <FocusEditor focus={checkin.focusNote} />
           </div>
-        </div>
 
-        {/* Nivel / XP / racha */}
-        <div className="card lvl-card">
-          <div className="dc-head">
-            <span className="eyebrow">Tu constancia</span>
-            <span className="lv-badge">Nivel {level.level}</span>
-          </div>
-          <div className="lv-bar">
-            <i style={{ width: `${levelPct}%` }} />
-          </div>
-          <div className="lv-meta">
-            <span>
-              {level.inLevel} / {level.per} XP
-            </span>
-            <span>faltan {level.per - level.inLevel} para el nivel {level.level + 1}</span>
-          </div>
-          <div className="lv-stats">
-            <div>
-              <b>🔥 {d.streak}</b>
-              <span>días de racha</span>
+          <div className="card lvl-card">
+            <div className="dc-head">
+              <span className="eyebrow">Tu constancia</span>
+              <span className="lv-badge">Nivel {level.level}</span>
             </div>
-            <div>
-              <b>{calendar.filter((c) => c.score != null).length}</b>
-              <span>días con registro</span>
+            <div className="lv-bar">
+              <i style={{ width: `${levelPct}%` }} />
+            </div>
+            <div className="lv-meta">
+              <span>
+                {level.inLevel} / {level.per} XP
+              </span>
+              <span>faltan {level.per - level.inLevel} para el nivel {level.level + 1}</span>
+            </div>
+            <div className="lv-stats">
+              <div>
+                <b>🔥 {d.streak}</b>
+                <span>días de racha</span>
+              </div>
+              <div>
+                <b>{calendar.filter((c) => c.score != null).length}</b>
+                <span>días con registro</span>
+              </div>
             </div>
           </div>
-        </div>
+
+          <AreaStrip breakdown={score.breakdown} />
+
+        </SwipeDeck>
 
         {/* Nutrición: calorías arriba y los macros en cards propias debajo */}
         <div className="nutri-block">
-          <div className="card cal-hero">
+          {/* Anillo a la izquierda y las cifras a la derecha. Sin título ni
+              botón: el anillo ya dice de qué es y registrar se hace desde "+". */}
+          <div className="card cal-hero lead">
+            <Ring size={84} stroke={9} value={goals.kcal ? totals.kcal / goals.kcal : 0} color="var(--ink)" centerFontSize={24}>
+              🔥
+            </Ring>
             <div>
-              <div className="dc-head">
-                <span className="eyebrow">Nutrición</span>
-                <span className="dc-pct">{nPct >= 0 ? nPct + "%" : "—"}</span>
-              </div>
               <div className="cal-num">
                 {nf(totals.kcal)}
                 <small>/{nf(goals.kcal)}</small>
               </div>
               <div className="cal-lbl">Calorías · faltan {nf(Math.max(0, goals.kcal - totals.kcal))}</div>
-              <div className="dc-foot">
-                <AddMealButton label="Registrar comida" />
-              </div>
             </div>
-            <Ring size={84} stroke={9} value={goals.kcal ? totals.kcal / goals.kcal : 0} color="var(--ink)" centerFontSize={24}>
-              🔥
-            </Ring>
           </div>
 
           <div className="macro-cards">
             <MacroCard label="Proteína" value={totals.protein} goal={goals.protein} emoji="🍗" color="var(--red)" tint="var(--red-tint)" />
-            <MacroCard label="Carbos" value={totals.carbs} goal={goals.carbs} emoji="🍜" color="var(--amber)" tint="var(--amber-tint)" />
+            <MacroCard label="Carbos" value={totals.carbs} goal={goals.carbs} emoji="🍝" color="var(--amber)" tint="var(--amber-tint)" />
             <MacroCard label="Grasa" value={totals.fat} goal={goals.fat} emoji="🥑" color="var(--blue)" tint="var(--blue-tint)" />
           </div>
         </div>
 
         {/* Recomendaciones accionables */}
         <InsightList items={insights} />
-
-        {/* Áreas */}
-        <AreaStrip breakdown={score.breakdown} />
 
         {/* Hábitos clave */}
         <div className="card dcard">
@@ -167,10 +178,11 @@ export default async function TodayPage() {
             keyHabits.map((h) => {
               const pct = h.target ? Math.min(100, Math.round((h.value / h.target) * 100)) : h.done ? 100 : 0;
               const dec = h.unit.toLowerCase() === "l" || h.unit.toLowerCase() === "h" ? 1 : 0;
+              const accent = habitAccent(h);
               return (
                 <div key={h.id} className="khrow">
                   <div className="kr">
-                    <Ring size={44} stroke={6} value={pct / 100} color="var(--ink)" track="var(--surface-2)" centerFontSize={16}>
+                    <Ring size={44} stroke={6} value={pct / 100} color={accent.color} track={accent.track} centerFontSize={16}>
                       {h.emoji}
                     </Ring>
                   </div>
@@ -210,12 +222,9 @@ export default async function TodayPage() {
                 ))}
             </ul>
           )}
-          <div className="dc-foot">
-            <Link href="/habits" className="head-action">
-              Ir a hábitos
-            </Link>
-          </div>
         </div>
+        {/* Cierre del día anterior, al final: primero se resuelve hoy. */}
+        <YesterdaySummaryCard date={yesterday} label={yesterdayLabel} />
       </div>
     </section>
   );

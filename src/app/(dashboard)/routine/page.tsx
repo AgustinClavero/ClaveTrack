@@ -8,8 +8,8 @@ import { PageDate } from "@/components/shell/PageDate";
 
 export const dynamic = "force-dynamic";
 
-export default async function RoutinePage() {
-  const d = await getHabitsDay(["routine", "mind"]);
+export default async function RoutinePage({ searchParams }: { searchParams: { d?: string } }) {
+  const d = await getHabitsDay(["routine", "mind"], searchParams?.d);
   if (!d) redirect("/login");
 
   const done = d.habits.filter((h) => h.done).length;
@@ -20,7 +20,7 @@ export default async function RoutinePage() {
       <header className="screen-head">
         <div>
           <h1 className="screen-title">Rutina</h1>
-          <PageDate date={d.date} timezone={d.timezone} />
+          <PageDate date={d.date} timezone={d.timezone} today={d.todayDate} isToday={d.isToday} />
         </div>
         <Link href="/settings" className="head-action">
           <Settings size={17} />
@@ -31,7 +31,7 @@ export default async function RoutinePage() {
       <div className="nut-grid">
         <div className="card cal-hero">
           <div>
-            <span className="eyebrow">Tu rutina de hoy</span>
+            <span className="eyebrow">{d.isToday ? "Tu rutina de hoy" : "Tu rutina de ese día"}</span>
             <div className="cal-num">
               {done}
               <small>/{d.habits.length}</small>
@@ -60,7 +60,7 @@ export default async function RoutinePage() {
           ) : (
             <div className="habit-grid">
               {d.habits.map((h) => (
-                <HabitCard key={h.id} habit={h} />
+                <HabitCard key={`${d.date}:${h.id}`} habit={h} />
               ))}
             </div>
           )}

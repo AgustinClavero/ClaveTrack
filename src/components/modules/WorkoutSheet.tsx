@@ -6,6 +6,7 @@ import { Minus, Plus } from "lucide-react";
 import { useUIStore } from "@/lib/store";
 import { Sheet } from "@/components/shell/Sheet";
 import { logWorkout } from "@/app/actions";
+import { useActiveDay } from "@/lib/hooks/use-active-day";
 import {
   INTENSITY_LABELS,
   WORKOUTS,
@@ -26,6 +27,7 @@ export function WorkoutSheet({ weightKg, heightCm }: { weightKg: number; heightC
   const open = useUIStore((s) => s.activeSheet === "workout");
   const closeSheet = useUIStore((s) => s.closeSheet);
   const router = useRouter();
+  const date = useActiveDay();
   const [pending, startTransition] = useTransition();
 
   const [kind, setKind] = useState<WorkoutKind>("caminata");
@@ -63,6 +65,7 @@ export function WorkoutSheet({ weightKg, heightCm }: { weightKg: number; heightC
     startTransition(async () => {
       const res = await logWorkout({
         kind,
+        date,
         minutes,
         intensity,
         steps: def.tracksSteps && steps > 0 ? steps : null,

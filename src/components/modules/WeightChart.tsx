@@ -44,6 +44,11 @@ export function WeightChart({ series, targetKg }: { series: WeightPoint[]; targe
   const delta = last.kg - first.kg;
   const toGo = last.kg - targetKg;
 
+  // El globo se ancla según dónde cae el punto: centrarlo siempre lo saca
+  // de pantalla, porque el último registro está pegado al borde derecho.
+  const lastPct = (lastX / W) * 100;
+  const anchor = lastPct > 70 ? "end" : lastPct < 30 ? "start" : "center";
+
   return (
     <div className="card chart-card">
       <div className="chart-head">
@@ -67,7 +72,7 @@ export function WeightChart({ series, targetKg }: { series: WeightPoint[]; targe
       </div>
 
       <div className="chart-wrap">
-        <div className="tip" style={{ left: `${(lastX / W) * 100}%`, top: `${(lastY / H) * 100}%` }}>
+        <div className="tip" data-anchor={anchor} style={{ left: `${lastPct}%`, top: `${(lastY / H) * 100}%` }}>
           {nf(last.kg, 1)} kg
           <small>último registro</small>
         </div>

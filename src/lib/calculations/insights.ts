@@ -17,6 +17,8 @@ export interface Insight {
   /** Ruta a la que lleva la acción sugerida. */
   href?: string;
   cta?: string;
+  /** Si está, tocar el aviso abre el resumen de ese día. */
+  summaryDate?: string;
 }
 
 export interface Milestone {

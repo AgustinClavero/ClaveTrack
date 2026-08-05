@@ -16,6 +16,8 @@
   /* Terciario / decorativo. */
   --muted: #83878f;
   --line: #ececea;
+  /* Trazo visible sobre el fondo de la app, no solo sobre blanco. */
+  --line-strong: #d6d6d2;
   --ink: #1c1e24;
   --ink-contrast: #ffffff;
   --red: #e5533c;
@@ -26,6 +28,13 @@
   --blue-tint: #e8f1fa;
   --danger: #c8392a;
   --success: #2f7d55;
+  /* Escala de cumplimiento: el verde se reserva para el final. */
+  --green: #3f9f6e;
+  --green-tint: #e4f2ea;
+  --lime: #7bb04a;
+  --lime-tint: #edf4e4;
+  --orange: #e07a3c;
+  --orange-tint: #fbeade;
   --shadow-sm: 0 1px 2px rgba(18, 18, 20, 0.05), 0 2px 6px rgba(18, 18, 20, 0.04);
   --shadow: 0 1px 2px rgba(18, 18, 20, 0.04), 0 10px 26px rgba(18, 18, 20, 0.06);
   --shadow-nav: 0 8px 30px rgba(18, 18, 20, 0.14);
@@ -81,12 +90,19 @@ html[data-theme="dark"] {
   --text-2: #b9b9c1;
   --muted: #9a9aa2;
   --line: #2c2c31;
+  --line-strong: #3d3d44;
   --ink: #f2f2f4;
   --ink-contrast: #141416;
   --red: #f0796d;
   --red-tint: #2c1917;
   --amber: #e9b45f;
   --amber-tint: #2a2314;
+  --green: #4fb37f;
+  --green-tint: #16281f;
+  --lime: #8cc45b;
+  --lime-tint: #1d2716;
+  --orange: #ef8f52;
+  --orange-tint: #2b1c12;
   --blue: #5aa6e0;
   --blue-tint: #132330;
   --danger: #f0796d;
@@ -700,6 +716,9 @@ body {
 .chart-wrap {
   position: relative;
   width: 100%;
+  /* El globo del último registro asoma por encima del gráfico: sin este
+     aire queda pegado a la píldora del objetivo. */
+  margin-top: var(--sp-6);
 }
 svg.line {
   width: 100%;
@@ -718,6 +737,13 @@ svg.line {
   transform: translate(-50%, -115%);
   white-space: nowrap;
   box-shadow: var(--shadow);
+}
+/* Cerca de un extremo se apoya en el borde en vez de centrarse y desbordar. */
+.tip[data-anchor="end"] {
+  transform: translate(-100%, -115%);
+}
+.tip[data-anchor="start"] {
+  transform: translate(0, -115%);
 }
 .tip small {
   display: block;
@@ -1483,7 +1509,7 @@ svg.line {
   padding: 16px 18px;
 }
 .dash .greet {
-  margin: 8px 4px 6px;
+  margin: 8px 0 6px;
 }
 .dash .greet h1 {
   font-size: 23px;
@@ -1535,13 +1561,6 @@ svg.line {
   font-weight: 700;
   font-size: 14px;
 }
-.cday.today .cdr::after {
-  content: "";
-  position: absolute;
-  inset: -4px;
-  border-radius: 50%;
-  border: 2px solid var(--ink);
-}
 
 /* hero */
 .d-hero {
@@ -1566,12 +1585,6 @@ svg.line {
   color: var(--muted);
   font-weight: 700;
   margin-bottom: 2px;
-}
-.d-hero .hm .big {
-  font-size: 36px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1;
 }
 .d-hero .hm .foc {
   margin-top: 11px;
@@ -1698,7 +1711,7 @@ svg.line {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--r-card);
-  padding: 22px;
+  padding: 20px; /* igual que .card: si no, los títulos no alinean entre cards */
   box-shadow: var(--shadow);
 }
 .dcard h3 {
@@ -1960,17 +1973,38 @@ svg.line {
 
 /* Encabezado de pantalla con acción a la derecha */
 .screen-head {
+  --action-h: 34px;
+  /* Alto de la línea del título: el body usa line-height 1.45. */
+  --title-line: calc(var(--fs-3xl) * 1.45);
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: var(--sp-4);
+  gap: var(--sp-3);
   margin: var(--sp-2) 0 var(--sp-5);
-  flex-wrap: wrap;
+}
+/* El bloque de título puede encoger: si no, la acción cae a otra línea. */
+.screen-head > :first-child {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+/* La acción es secundaria al dato: compacta y centrada contra la LÍNEA del
+   título, no contra el bloque entero (que además lleva la fecha debajo). */
+.screen-head > .head-action,
+.screen-head > button,
+.screen-head > a {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  min-height: var(--action-h);
+  margin-top: calc((var(--title-line) - var(--action-h)) / 2);
+  padding: 0 var(--sp-3);
+  font-size: var(--fs-xs);
+  gap: var(--sp-1);
 }
 .screen-title {
   font-size: var(--fs-3xl);
   font-weight: 800;
   letter-spacing: var(--tracking-tight);
+  line-height: 1.45; /* explícito: --title-line se calcula contra esto */
   margin: 0;
 }
 .screen-sub {
@@ -1995,7 +2029,7 @@ svg.line {
   gap: var(--sp-2);
   min-height: 44px;
   padding: 0 var(--sp-4);
-  border: 1.5px solid var(--line);
+  border: 1.5px solid var(--line-strong);
   background: var(--surface);
   color: var(--text);
   border-radius: var(--r-pill);
@@ -2018,13 +2052,18 @@ svg.line {
 /* ---------- Héroe del día ---------- */
 .d-hero {
   display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+/* Anillo y texto en una fila; el foco del día queda debajo a todo el ancho. */
+.dh-top {
+  display: flex;
   align-items: center;
-  gap: var(--sp-5);
-  flex-wrap: wrap;
+  gap: var(--sp-4);
 }
 .d-hero .hm {
   flex: 1;
-  min-width: 180px;
+  min-width: 0;
 }
 .d-hero .big {
   font-size: var(--fs-display);
@@ -2221,7 +2260,7 @@ svg.line {
   width: 34px;
   height: 34px;
   border-radius: var(--r-pill);
-  border: 1.5px solid var(--line);
+  border: 1.5px solid var(--line-strong);
   background: var(--surface);
   color: var(--text);
   display: grid;
@@ -2480,11 +2519,17 @@ svg.line {
   visibility: hidden;
   transition: transform var(--dur) var(--ease), visibility 0s var(--dur);
 }
-.sheet h3 {
+/* Hijo directo: el título del Sheet, no los h3 que traiga el contenido
+   (el detalle del día tiene el suyo al lado del anillo). */
+.sheet > h3 {
   font-size: var(--fs-xl);
   font-weight: 800;
   letter-spacing: var(--tracking-tight);
   margin: var(--sp-2) 0 var(--sp-1);
+  text-align: center;
+}
+.sheet > .sub {
+  text-align: center;
 }
 .sheet .sub {
   font-size: var(--fs-sm);
@@ -2711,6 +2756,10 @@ svg.line {
   gap: var(--sp-2);
   overflow-x: auto;
   padding-bottom: var(--sp-1);
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar {
+  display: none;
 }
 .tab {
   min-height: 44px;
@@ -2944,7 +2993,26 @@ svg.line {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  padding: 0 var(--sp-2) var(--sp-2);
+  padding: 0 var(--sp-2) var(--sp-3);
+}
+/* En escritorio el sidebar no tiene .drawer-link, pero el switch sí lo usa. */
+.sidebar .theme-switch {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sidebar .theme-switch:hover {
+  background: var(--surface-2);
+  color: var(--text);
 }
 .ss-lab {
   font-size: var(--fs-xs);
@@ -3114,9 +3182,6 @@ svg.line {
 @media (max-width: 380px) {
   .d-hero {
     gap: var(--sp-4);
-  }
-  .d-hero .big {
-    font-size: var(--fs-3xl);
   }
 }
 
@@ -3636,8 +3701,11 @@ svg.line {
    hoy como disco negro con el progreso en blanco.
    ============================================================ */
 .cal-card-wrap {
-  padding: var(--sp-3) var(--sp-2);
+  padding: 0;
   overflow: hidden;
+  background: none;
+  border: 0;
+  box-shadow: none;
 }
 .cal7 {
   display: flex;
@@ -3886,6 +3954,8 @@ svg.line {
   flex: 0 0 auto;
   display: grid;
   place-items: center;
+  /* Sin esto el glifo se apoya en la baseline de una línea de 1.45 y sube. */
+  line-height: 1;
   border-radius: var(--r-pill);
   background: var(--surface);
   font-size: var(--fs-lg);
@@ -4166,9 +4236,7 @@ svg.line {
   gap: var(--sp-3);
   height: 100%;
 }
-.habit-cardx.done {
-  border: 1.5px solid var(--ink);
-}
+
 .hc-head {
   display: flex;
   align-items: center;
@@ -4256,7 +4324,8 @@ svg.line {
 .hc-toggle {
   width: 100%;
   min-height: 44px;
-  border: 1.5px solid var(--line);
+  /* --line se pierde sobre la card: sin marcar tiene que leerse como botón. */
+  border: 1.5px solid var(--line-strong);
   border-radius: var(--r-pill);
   background: var(--surface);
   color: var(--text);
@@ -4546,7 +4615,7 @@ svg.line {
 
 @media (min-width: 1024px) {
   .habit-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(var(--deck-n, 3), 1fr);
   }
   .hset-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -4679,12 +4748,25 @@ svg.line {
   border-radius: var(--r-pill);
   border: 2px solid var(--surface);
 }
-.bell-panel {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
+/* Bajo el panel de avisos pero sobre todo lo demás. */
+.bell-overlay {
+  z-index: calc(var(--z-sheet) - 1);
+}
+/* La campana queda sobre el oscurecido: se ve de dónde sale el panel
+   y el botón sigue siendo el modo de cerrarlo. */
+.bell-wrap:has(.bell-panel) .bell {
+  position: relative;
   z-index: var(--z-sheet);
-  width: min(330px, calc(100vw - 32px));
+}
+
+/* top/left los calcula el componente contra la pantalla (ver NotificationBell). */
+.bell-panel {
+  position: fixed;
+  z-index: var(--z-sheet);
+  width: min(330px, calc(100vw - 24px));
+  max-height: min(70vh, 520px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: var(--sp-4);
   background: var(--surface);
   border: 1px solid var(--line);
@@ -4827,13 +4909,6 @@ svg.line {
 }
 
 /* En el sidebar la campanita abre hacia la derecha y hacia arriba. */
-.side-streak .bell-panel {
-  left: 0;
-  right: auto;
-  top: auto;
-  bottom: calc(100% + 8px);
-  width: min(300px, calc(100vw - 32px));
-}
 .side-streak {
   position: relative;
 }
@@ -4956,7 +5031,8 @@ svg.line {
   padding-bottom: var(--sp-4);
   border-bottom: 1px solid var(--line);
 }
-.dm-head > div {
+/* Sin :not(.pring) el anillo se estira y el número queda fuera del círculo. */
+.dm-head > div:not(.pring) {
   flex: 1;
   min-width: 0;
 }
@@ -4974,40 +5050,54 @@ svg.line {
   list-style: none;
   margin: var(--sp-4) 0 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: var(--sp-2);
 }
 .dm-list li {
   display: flex;
-  align-items: center;
-  gap: var(--sp-3);
+  flex-direction: column;
+  gap: var(--sp-1);
   padding: var(--sp-3);
   background: var(--surface-2);
   border-radius: var(--r-md);
 }
 .dm-list li.no {
-  opacity: 0.6;
+  opacity: 0.75;
+}
+.dm-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+.dm-emoji {
+  font-size: var(--fs-lg);
+  line-height: 1;
 }
 .dm-ic {
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   flex: 0 0 auto;
   display: grid;
   place-items: center;
   border-radius: var(--r-pill);
   background: var(--surface);
-  color: var(--text-2);
+  /* Sin cumplir también se ve el círculo: si no, la cruz parece un hueco.
+     El borde va en gris medio porque sobre la card gris --line no se lee. */
+  border: 1.5px solid var(--muted);
+  color: var(--muted);
 }
 .dm-list li.ok .dm-ic {
   background: var(--ink);
+  border-color: var(--ink);
   color: var(--ink-contrast);
 }
 .dm-name {
-  flex: 1;
   min-width: 0;
   font-size: var(--fs-sm);
   font-weight: 700;
+  line-height: 1.25;
 }
 .dm-val {
   font-size: var(--fs-xs);
@@ -5096,13 +5186,8 @@ svg.line {
   background: var(--line);
 }
 
-/* El anillo de cada card toma el acento de su categoría. */
-.habit-cardx[data-cat="nutrition"].done,
-.habit-cardx[data-cat="activity"].done,
-.habit-cardx[data-cat="routine"].done,
-.habit-cardx[data-cat="mind"].done {
-  border-color: var(--ink);
-}
+/* Cumplido no cambia el borde de la card: el anillo completo y el tilde ya
+   lo dicen, y el marco negro rompía la grilla. */
 
 /* Fecha del día bajo el título de cada página. */
 .page-date {
@@ -5110,6 +5195,214 @@ svg.line {
   font-size: var(--fs-sm);
   color: var(--text-2);
   font-weight: 600;
+}
+
+/* ---- Navegación por día ---- */
+.date-block {
+  margin: var(--sp-1) 0 0;
+}
+.date-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  flex-wrap: wrap;
+}
+.date-nav > button:not(.date-today) {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.date-nav > button:not(.date-today):hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.date-nav > button:not(.date-today):disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.date-nav .date-label {
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.date-nav .date-today {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--ink-contrast);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* ---- Cajón lateral de móvil ---- */
+.menu-btn {
+  display: grid;
+}
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 60;
+}
+.drawer-backdrop.on {
+  opacity: 1;
+  pointer-events: auto;
+}
+.drawer {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: min(82vw, 300px);
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  transform: translateX(-100%);
+  transition: transform 0.24s cubic-bezier(0.32, 0.72, 0, 1);
+  z-index: 61;
+  display: flex;
+  flex-direction: column;
+  padding: var(--sp-3) var(--sp-3) calc(var(--sp-3) + env(safe-area-inset-bottom));
+  gap: var(--sp-3);
+}
+.drawer.on {
+  transform: translateX(0);
+}
+.drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.drawer-head .hb {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+  font-size: var(--fs-md);
+}
+.drawer-head .logo {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--ink);
+  color: var(--ink-contrast);
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  font-size: 16px;
+}
+/* ---- Racha del sidebar ---- */
+.streak-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  width: 100%;
+  padding: var(--sp-3) var(--sp-2);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+.streak-badge .sb-num {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text);
+}
+
+/* ---- Modo nocturno como interruptor ---- */
+.theme-switch .sw {
+  flex: 0 0 auto;
+  margin-left: auto;
+  width: 38px;
+  height: 22px;
+  border-radius: var(--r-pill);
+  background: var(--line);
+  position: relative;
+  transition: background var(--dur-fast) var(--ease);
+}
+.theme-switch[aria-checked="true"] .sw {
+  background: var(--ink);
+}
+.theme-switch .sw::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--surface);
+  transition: transform var(--dur-fast) var(--ease);
+}
+.theme-switch[aria-checked="true"] .sw::after {
+  transform: translateX(16px);
+}
+.drawer-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.drawer-foot {
+  margin-top: auto;
+  border-top: 1px solid var(--line);
+  padding-top: var(--sp-2);
+}
+.drawer-link {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  width: 100%;
+  padding: 11px var(--sp-2);
+  border: 0;
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.drawer-link .ic {
+  display: grid;
+  place-items: center;
+}
+.drawer-link:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.drawer-link.on {
+  background: var(--ink);
+  color: var(--ink-contrast);
+}
+
+@media (min-width: 1024px) {
+  .menu-btn,
+  .drawer,
+  .drawer-backdrop {
+    display: none;
+  }
 }
 
 /* Hábitos que se completan solos con lo registrado. */
@@ -5610,13 +5903,20 @@ svg.line {
 .deck-track {
   display: flex;
   gap: var(--sp-4);
+  /* Cada página conserva su alto; el track se ajusta a la activa. */
+  align-items: flex-start;
+  /* Es flex item de .deck: sin esto se encoge y come la altura aplicada. */
+  flex-shrink: 0;
   overflow-x: auto;
+  overflow-y: hidden;
+  transition: height var(--dur-fast) var(--ease);
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  /* Sale del padding lateral de la pantalla para que las páginas lleguen al borde. */
-  margin: 0 calc(var(--sp-5) * -1);
-  padding: 0 var(--sp-5);
+  /* Cada página ocupa el ancho completo: con padding lateral asomaba la
+     siguiente card por el costado y parecía que se colaba. */
+  margin: 0;
+  padding: 0;
 }
 .deck-track::-webkit-scrollbar {
   display: none;
@@ -5634,21 +5934,28 @@ svg.line {
   gap: var(--sp-2);
   justify-content: center;
 }
+/* El área táctil es el botón entero; el punto es solo lo que se ve. */
 .deck-dot {
-  padding: var(--sp-1) var(--sp-3);
-  min-height: 32px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 0;
   border: none;
-  border-radius: var(--r-pill);
-  background: var(--surface-2);
-  color: var(--text-2);
-  font-size: var(--fs-xs);
-  font-weight: 700;
+  background: none;
   cursor: pointer;
+}
+.deck-dot::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: var(--r-pill);
+  background: var(--muted);
   transition: all var(--dur-fast) var(--ease);
 }
-.deck-dot.on {
+.deck-dot.on::after {
+  width: 20px;
   background: var(--ink);
-  color: var(--ink-contrast);
 }
 
 /* En tablet y desktop no hay carrusel: se ve todo a la vez. */
@@ -5658,7 +5965,7 @@ svg.line {
   }
   .deck-track {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(var(--deck-n, 3), 1fr);
     overflow: visible;
     margin: 0;
     padding: 0;
@@ -5670,6 +5977,20 @@ svg.line {
   .deck-dots {
     display: none;
   }
+}
+
+/* Peso y racha comparten página: van apilados como estaban antes del deck. */
+.prog-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+}
+
+/* Sin sombra dentro del carrusel: con las páginas pegadas una al lado de la
+   otra, la sombra de la vecina se lee como una mancha detrás de la actual. */
+.deck-page .card,
+.deck-page > .card {
+  box-shadow: none;
 }
 
 /* Dentro del deck: calorías + macros forman una sola página. */
@@ -5701,4 +6022,424 @@ svg.line {
 .nutri-block .macro-card {
   padding: var(--sp-4) var(--sp-3) var(--sp-5);
   gap: var(--sp-3);
+}
+
+/* ============================================================
+   En móvil no se muestran barras de scroll: todo lo que scrollea
+   se arrastra con el dedo y la barra solo come espacio y ensucia.
+   ============================================================ */
+@media (max-width: 1023px) {
+  * {
+    scrollbar-width: none;
+  }
+  *::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+}
+
+/* ============================================================
+   Card de calorías con el anillo adelante (Hoy).
+   Va al final para ganarle a `.nutri-block .cal-hero`, que alinea arriba.
+   ============================================================ */
+.cal-hero.lead {
+  align-items: center;
+  justify-content: flex-start;
+}
+.cal-hero.lead > div:last-child {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* ============================================================
+   Resumen del día: la lectura en palabras del Nutrition Score.
+   ============================================================ */
+/* Pantalla completa: el cierre del día se lee sin distracciones. */
+.summary-full {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-sheet) + 1);
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  animation: sf-in 0.22s var(--ease);
+}
+@keyframes sf-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+.sf-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(env(safe-area-inset-top) + var(--sp-4)) var(--sp-5) var(--sp-3);
+}
+.sf-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 var(--sp-5) calc(var(--sp-8) + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+}
+.sf-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-4) 0 var(--sp-2);
+}
+.sf-hero h2 {
+  margin: var(--sp-2) 0 0;
+  font-size: var(--fs-2xl);
+  font-weight: 800;
+  letter-spacing: var(--tracking-tight);
+}
+.sf-date {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+  font-weight: 600;
+}
+.sf-lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+.sf-lines li {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  font-size: var(--fs-sm);
+  line-height: 1.45;
+}
+.sf-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+}
+.sf-block .ds-parts {
+  padding-top: 0;
+  border-top: 0;
+}
+.sf-streak {
+  margin: 0;
+  padding: var(--sp-4);
+  border-radius: var(--r-card);
+  background: var(--ink);
+  color: var(--ink-contrast);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* Botón del detalle del día en Progreso. */
+.dm-summary {
+  width: 100%;
+  justify-content: center;
+  margin-top: var(--sp-4);
+}
+
+.ds-lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.ds-lines li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  font-size: var(--fs-sm);
+  line-height: 1.4;
+  color: var(--text);
+}
+.ds-ic {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+/* Sin círculo: el ícono suelto se alinea con el texto y no hay caja
+   respecto a la cual quedar descentrado. El color hace todo el trabajo. */
+.ds-lines .ds-ic,
+.sf-lines .ds-ic {
+  width: auto;
+  height: auto;
+  margin-top: 0;
+  background: none;
+  border-radius: 0;
+}
+.ds-lines li.ln-good .ds-ic,
+.sf-lines li.ln-good .ds-ic {
+  color: var(--green);
+}
+.ds-lines li.ln-tip .ds-ic,
+.sf-lines li.ln-tip .ds-ic {
+  color: var(--blue);
+}
+.ds-lines li.ln-warn .ds-ic,
+.sf-lines li.ln-warn .ds-ic {
+  color: var(--amber);
+}
+
+/* Desglose: cada decisión con su barra. */
+.ds-parts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--line);
+}
+.ds-part {
+  display: grid;
+  grid-template-columns: 92px 1fr 40px;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.dsp-lab {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--text-2);
+}
+.dsp-lab i {
+  font-style: normal;
+  font-size: var(--fs-sm);
+  line-height: 1;
+}
+.dsp-bar {
+  height: 7px;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  overflow: hidden;
+}
+/* El color lo pone el componente con la escala de cumplimiento. */
+.dsp-bar i {
+  display: block;
+  height: 100%;
+  border-radius: var(--r-pill);
+  background: var(--green);
+  transition: width var(--dur-fast) var(--ease);
+}
+.dsp-val {
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  text-align: right;
+}
+.ds-streak {
+  margin: 0;
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--line);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--text-2);
+}
+
+/* Acceso al resumen del día anterior, al final de Inicio. */
+.yday-card {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: var(--text);
+  transition: border-color var(--dur-fast) var(--ease);
+}
+.yday-card:hover {
+  border-color: var(--ink);
+}
+.yc-ic {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+.yc-txt {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.yc-t {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+}
+.yc-d {
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  font-weight: 600;
+}
+.yc-arrow {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+
+/* ============================================================
+   Hoja de "Registrar": título centrado y accesos en dos columnas,
+   más grandes y más fáciles de acertar con el pulgar.
+   ============================================================ */
+.sheet.register > h3 {
+  margin-bottom: var(--sp-4);
+}
+.sheet.register .sheet-grid {
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--sp-3);
+}
+.sheet.register .sa {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  text-align: left;
+  padding: var(--sp-4);
+}
+.sheet.register .sa .si {
+  font-size: var(--fs-2xl);
+  line-height: 1;
+}
+.sheet.register .sa .sn {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+}
+.sheet.register .sheet-note {
+  text-align: center;
+}
+
+/* Acceso al buscador de comidas desde la hoja de nutrición. */
+.ns-meal {
+  width: 100%;
+  justify-content: center;
+  margin-bottom: var(--sp-4);
+}
+
+/* ============================================================
+   Estado del día: valor derivado del check-in, no un campo más.
+   ============================================================ */
+.ci-state {
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  margin-bottom: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.cis-top {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.cis-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  background: var(--muted);
+}
+.ci-state.excelente .cis-dot {
+  background: var(--green);
+}
+.ci-state.bueno .cis-dot {
+  background: var(--lime);
+}
+.ci-state.justo .cis-dot {
+  background: var(--amber);
+}
+.ci-state.bajo .cis-dot {
+  background: var(--red);
+}
+.cis-lab {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-sm);
+  font-weight: 800;
+}
+.cis-idx {
+  font-size: var(--fs-lg);
+  font-weight: 800;
+  letter-spacing: var(--tracking-tight);
+}
+.cis-parts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-3);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--text-2);
+}
+.cis-advice {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  line-height: 1.4;
+}
+
+/* Lectura del peso: medias móviles y ritmo, no la pesada suelta. */
+.wt-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--line);
+}
+.wt-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: center;
+}
+.wt-v {
+  font-size: var(--fs-md);
+  font-weight: 800;
+  letter-spacing: var(--tracking-tight);
+}
+.wt-v.good {
+  color: var(--green);
+}
+.wt-l {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  font-weight: 700;
+}
+.wt-note {
+  margin: var(--sp-3) 0 0;
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  font-weight: 600;
 }
