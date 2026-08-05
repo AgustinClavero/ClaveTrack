@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getServerClient, getUserContext } from "@/lib/data/context";
+import { getServerClient, getUserContext, resolveDay } from "@/lib/data/context";
 import { materializeDayScore } from "@/lib/data/score";
 import { workoutSchema, uuid } from "@/lib/validations";
 import { burnedKcal, stepsToKm, type WorkoutKind } from "@/lib/calculations/activity";
@@ -36,6 +36,7 @@ export async function logWorkout(input: unknown): Promise<ActionResult<{ kcal: n
   const ctx = await getUserContext();
   if (!ctx) return { ok: false, error: "Sesión expirada." };
   const w = parsed.data;
+  const { date } = resolveDay(ctx.today, w.date);
 
   const weightKg = await currentWeight(ctx.userId);
   const kcal = burnedKcal({ kind: w.kind as WorkoutKind, minutes: w.minutes, intensity: w.intensity, weightKg });
@@ -47,7 +48,7 @@ export async function logWorkout(input: unknown): Promise<ActionResult<{ kcal: n
   const supabase = getServerClient();
   const { error } = await supabase.from("workouts").insert({
     user_id: ctx.userId,
-    log_date: ctx.today,
+    log_date: date,
     kind: w.kind,
     minutes: w.minutes,
     intensity: w.intensity,
@@ -75,14 +76,14 @@ export async function logWorkout(input: unknown): Promise<ActionResult<{ kcal: n
         .from("habit_entries")
         .select("value")
         .eq("habit_id", habit.id)
-        .eq("log_date", ctx.today)
+        .eq("log_date", date)
         .maybeSingle();
       const next = Number(entry?.value ?? 0) + w.steps;
       await supabase.from("habit_entries").upsert(
         {
           habit_id: habit.id,
           user_id: ctx.userId,
-          log_date: ctx.today,
+          log_date: date,
           value: next,
           done: habit.target_value != null ? next >= Number(habit.target_value) : next > 0,
         },
@@ -91,9 +92,8 @@ export async function logWorkout(input: unknown): Promise<ActionResult<{ kcal: n
     }
   }
 
-  await materializeDayScore(supabase, ctx.userId, ctx.today);
+  await materializeDayScore(supabase, ctx.userId, date);
   revalidateDay();
-  revalidatePath("/habits");
   return { ok: true, data: { kcal } };
 }
 

@@ -6,7 +6,7 @@
 
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { userToday, DEFAULT_TZ } from "@/lib/date";
+import { addDays, userToday, DEFAULT_TZ } from "@/lib/date";
 import { weightsFromSettings, DEFAULT_STREAK_THRESHOLD, type AreaKey } from "@/lib/calculations/scoring";
 import type { Tables } from "@/types/database";
 
@@ -31,6 +31,18 @@ export interface UserContext {
   settings: Tables<"user_settings"> | null;
   weights: Record<AreaKey, number>;
   streakThreshold: number;
+}
+
+/**
+ * Día efectivo sobre el que se lee o escribe.
+ * El cliente puede pedir otra fecha (para completar días olvidados), pero
+ * nunca el futuro ni más de un año atrás: el "hoy" sigue saliendo del servidor.
+ */
+export function resolveDay(today: string, requested?: string | null): { date: string; isToday: boolean } {
+  if (!requested || !/^\d{4}-\d{2}-\d{2}$/.test(requested)) return { date: today, isToday: true };
+  const floor = addDays(today, -365);
+  if (requested > today || requested < floor) return { date: today, isToday: true };
+  return { date: requested, isToday: requested === today };
 }
 
 /** Perfil + ajustes + "hoy" del usuario. null = sin sesión. */

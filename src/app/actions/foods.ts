@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getServerClient, getUserContext } from "@/lib/data/context";
+import { getServerClient, getUserContext, resolveDay } from "@/lib/data/context";
 import { materializeDayScore } from "@/lib/data/score";
 import { foodCreateSchema, logRecipeSchema, recipeSchema, toggleFavoriteSchema, uuid } from "@/lib/validations";
 import { DEFAULT_FOODS, type FoodCategory } from "@/lib/data/default-foods";
@@ -329,6 +329,7 @@ export async function logRecipe(input: unknown): Promise<ActionResult> {
   if (!ctx) return { ok: false, error: "Sesión expirada." };
   const supabase = getServerClient();
   const portions = parsed.data.servings ?? 1;
+  const { date } = resolveDay(ctx.today, parsed.data.date);
 
   const { data: recipe } = await supabase
     .from("recipes")
@@ -354,7 +355,7 @@ export async function logRecipe(input: unknown): Promise<ActionResult> {
     .from("meals")
     .insert({
       user_id: ctx.userId,
-      log_date: ctx.today,
+      log_date: date,
       meal_type: parsed.data.mealType,
       eaten_at: new Date().toISOString(),
     })
@@ -384,7 +385,7 @@ export async function logRecipe(input: unknown): Promise<ActionResult> {
     return { ok: false, error: "No se pudieron guardar los ingredientes." };
   }
 
-  await materializeDayScore(supabase, ctx.userId, ctx.today);
+  await materializeDayScore(supabase, ctx.userId, date);
   revalidatePath("/nutrition");
   revalidatePath("/today");
   return { ok: true, data: undefined };

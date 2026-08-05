@@ -8,17 +8,24 @@ import { z } from "zod";
 
 // ---------- Primitivas ----------
 export const uuid = z.string().uuid();
+/**
+ * Fecha de registro. Es lo único que el cliente puede elegir del "día":
+ * se valida el formato y la acción rechaza futuro o más de un año atrás.
+ */
+export const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const scale10 = z.number().int().min(1).max(10);
 
 // ---------- Hábitos ----------
 export const toggleHabitSchema = z.object({
   habitId: uuid,
   done: z.boolean(),
+  date: isoDate.optional(),
 });
 
 export const habitValueSchema = z.object({
   habitId: uuid,
   value: z.number().min(0).max(100000),
+  date: isoDate.optional(),
 });
 
 export const habitKind = z.enum(["boolean", "numeric", "duration", "weekly"]);
@@ -35,6 +42,7 @@ export const habitUpsertSchema = z.object({
   category: habitCategory.optional(),
   groupKey: z.string().trim().max(30).nullable().optional(),
 });
+
 
 // ---------- Actividad ----------
 export const workoutKind = z.enum([
@@ -56,6 +64,7 @@ export const workoutSchema = z.object({
   distanceKm: z.number().min(0).max(500).nullable().optional(),
   steps: z.number().int().min(0).max(200000).nullable().optional(),
   note: z.string().trim().max(200).optional(),
+  date: isoDate.optional(),
 });
 
 // ---------- Check-in ----------
@@ -65,12 +74,18 @@ export const checkinSchema = z.object({
   energy: scale10.optional(),
   sleepQuality: scale10.optional(),
   hunger: scale10.optional(),
+  stress: scale10.optional(),
+  /** Horas dormidas: pesan aparte de la calidad. */
+  sleepHours: z.number().min(0).max(24).nullable().optional(),
   focusNote: z.string().trim().max(200).optional(),
+  focusDone: z.boolean().optional(),
+  date: isoDate.optional(),
 });
 
 // ---------- Peso ----------
 export const weightSchema = z.object({
   kg: z.number().min(20).max(400),
+  date: isoDate.optional(),
 });
 
 // ---------- Nutrición ----------
@@ -123,6 +138,7 @@ export const logRecipeSchema = z.object({
   recipeId: uuid,
   mealType,
   servings: z.number().positive().max(10).optional(),
+  date: isoDate.optional(),
 });
 
 const mealItemFromFood = z.object({
@@ -146,6 +162,7 @@ export const logMealSchema = z.object({
   /** Ruta en Storage: {user_id}/{archivo}. Se valida la pertenencia en la acción. */
   photoPath: z.string().trim().max(300).nullable().optional(),
   items: z.array(z.discriminatedUnion("kind", [mealItemFromFood, mealItemManual])).min(1).max(30),
+  date: isoDate.optional(),
 });
 export type LogMealInput = z.infer<typeof logMealSchema>;
 

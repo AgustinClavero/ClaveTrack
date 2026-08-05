@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getServerClient, getUserContext } from "@/lib/data/context";
+import { getServerClient, getUserContext, resolveDay } from "@/lib/data/context";
 import { materializeDayScore } from "@/lib/data/score";
 import { logMealSchema, nutritionGoalsSchema, updateMealSchema, uuid } from "@/lib/validations";
 import type { ActionResult } from "@/types";
@@ -10,6 +10,7 @@ import type { TablesUpdate } from "@/types/database";
 function revalidateDay() {
   revalidatePath("/today");
   revalidatePath("/nutrition");
+  revalidatePath("/progress");
 }
 
 /**
@@ -22,6 +23,7 @@ export async function logMeal(input: unknown): Promise<ActionResult> {
   if (!parsed.success) return { ok: false, error: "Revisá los datos de la comida." };
   const ctx = await getUserContext();
   if (!ctx) return { ok: false, error: "Sesión expirada." };
+  const { date } = resolveDay(ctx.today, parsed.data.date);
   const supabase = getServerClient();
 
   // Resolver alimentos referenciados (solo los del usuario).
@@ -44,7 +46,7 @@ export async function logMeal(input: unknown): Promise<ActionResult> {
     .from("meals")
     .insert({
       user_id: ctx.userId,
-      log_date: ctx.today,
+      log_date: date,
       meal_type: parsed.data.mealType,
       eaten_at: new Date().toISOString(),
       note: parsed.data.note || null,
@@ -95,7 +97,7 @@ export async function logMeal(input: unknown): Promise<ActionResult> {
     return { ok: false, error: "No se pudieron guardar los alimentos de la comida." };
   }
 
-  await materializeDayScore(supabase, ctx.userId, ctx.today);
+  await materializeDayScore(supabase, ctx.userId, date);
   revalidateDay();
   return { ok: true, data: undefined };
 }

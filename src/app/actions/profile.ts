@@ -165,6 +165,6 @@ export async function completeOnboarding(input: unknown): Promise<ActionResult> 
   await materializeDayScore(supabase, ctx.userId, today);
   revalidatePath("/today");
   revalidatePath("/nutrition");
-  revalidatePath("/habits");
+  revalidatePath("/routine");
   return { ok: true, data: undefined };
 }
