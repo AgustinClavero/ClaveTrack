@@ -6443,3 +6443,38 @@ svg.line {
   color: var(--text-2);
   font-weight: 600;
 }
+
+/* ============================================================
+   Comportamiento táctil en móvil.
+   ============================================================ */
+
+/* iOS hace zoom al enfocar cualquier campo de menos de 16px. No se arregla
+   con user-scalable=no —eso le saca el zoom al usuario, que lo necesita—
+   sino con el tamaño real del texto. */
+input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  font-size: 16px;
+}
+
+/* Frena el rebote elástico y el pull-to-refresh: tirar hacia abajo dentro de
+   la app no tiene que recargar la página. */
+html,
+body {
+  overscroll-behavior-y: contain;
+}
+
+/* Sin doble-toque para hacer zoom sobre lo que se toca: dos toques rápidos
+   en un botón hacían zoom en vez de accionarlo dos veces. */
+button,
+a,
+[role="tab"],
+[role="switch"],
+label,
+.cday,
+.sa,
+.hs-row,
+.ins-row,
+.bell-item {
+  touch-action: manipulation;
+}
