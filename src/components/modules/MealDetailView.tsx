@@ -99,8 +99,9 @@ export function MealDetailView({ meal }: { meal: MealDetail }) {
         <input
           ref={fileRef}
           type="file"
+          // Sin `capture`: con él el móvil abre la cámara y no deja elegir
+          // de la galería.
           accept="image/*"
-          capture="environment"
           hidden
           onChange={(e) => {
             const f = e.target.files?.[0];

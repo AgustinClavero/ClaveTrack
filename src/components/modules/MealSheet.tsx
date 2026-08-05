@@ -251,8 +251,9 @@ export function MealSheet({ proteinToday = 0, proteinGoal = 0 }: { proteinToday?
       <input
         ref={fileRef}
         type="file"
+        // Sin `capture`: con él el móvil abre la cámara y no deja elegir de
+        // la galería, que es de donde salen casi todas las fotos de comida.
         accept="image/*"
-        capture="environment"
         hidden
         onChange={(e) => {
           const f = e.target.files?.[0];
