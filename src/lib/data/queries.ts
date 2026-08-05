@@ -292,6 +292,8 @@ export async function getDashboard(): Promise<Dashboard | null> {
     vegetableServings: facts.vegetableServings,
     fruitServings: facts.fruitServings,
     processedKcal: facts.processedKcal,
+    qualityScoreSum: facts.qualityScoreSum,
+    qualityScoredKcal: facts.qualityScoredKcal,
     habits: habits.map((h) => ({ done: h.done })),
     sleepQuality: log?.sleep_quality ?? null,
   };
@@ -1121,6 +1123,8 @@ export async function getDaySummary(day: string): Promise<DaySummaryPayload | nu
     vegetableServings: facts.vegetableServings,
     fruitServings: facts.fruitServings,
     processedKcal: facts.processedKcal,
+    qualityScoreSum: facts.qualityScoreSum,
+    qualityScoredKcal: facts.qualityScoredKcal,
     habits: [],
     sleepQuality: null,
   });

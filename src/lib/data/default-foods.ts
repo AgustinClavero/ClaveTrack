@@ -15,6 +15,7 @@ export type FoodCategory =
   | "grasas"
   | "lacteos"
   | "condimentos"
+  | "preparadas"
   | "otros";
 
 export const CATEGORY_META: Record<FoodCategory, { label: string; emoji: string }> = {
@@ -25,6 +26,7 @@ export const CATEGORY_META: Record<FoodCategory, { label: string; emoji: string 
   grasas: { label: "Grasas", emoji: "🥜" },
   lacteos: { label: "Lácteos", emoji: "🥛" },
   condimentos: { label: "Condimentos", emoji: "🧂" },
+  preparadas: { label: "Platos preparados", emoji: "🍲" },
   otros: { label: "Otros", emoji: "🍯" },
 };
 
@@ -39,6 +41,15 @@ export interface DefaultFood {
   fiber?: number;
   /** Ultraprocesado: baja el índice de calidad del día. Ante la duda, false. */
   isProcessed?: boolean;
+  /**
+   * Calidad nutricional 0..100. Distingue dos platos con macros parecidos:
+   * un bowl de pollo y verduras no es una pizza de muzzarella.
+   * Sin puntuar (undefined) no penaliza: los alimentos simples se juzgan
+   * por lo que aportan, no por un número.
+   */
+  healthyScore?: number;
+  /** Subgrupo dentro de los platos preparados (Pizzas, Bowls, Tartas...). */
+  dishGroup?: string;
   /** Cómo se cuenta: "huevo", "lata", "pote", "cda"… */
   unitLabel?: string;
   /** Cuántos gramos pesa una unidad. */
@@ -189,4 +200,72 @@ export const DEFAULT_FOODS: DefaultFood[] = [
   { name: "Stevia", category: "otros", base: "100g", kcal: 0, protein: 0, carbs: 0, fat: 0, isProcessed: true },
   { name: "Mermelada light", category: "otros", base: "100g", kcal: 140, protein: 0.4, carbs: 34, fat: 0.1, unitLabel: "cda", unitGrams: 20, isProcessed: true },
   { name: "Miel", category: "otros", base: "100g", kcal: 304, protein: 0.3, carbs: 82, fat: 0, unitLabel: "cda", unitGrams: 21 },
+
+  // ============================================================
+  // 🍲 Platos preparados. Macros por 100 g, igual que el resto:
+  // se registra pesando la porción, no contando unidades.
+  // `healthyScore` distingue calidad entre platos de macros parecidos.
+  // ============================================================
+
+  // ---------- Pastas y horno ----------
+  { name: "Lasaña de berenjena", category: "preparadas", dishGroup: "Pastas y horno", base: "100g", kcal: 207, protein: 11.3, carbs: 8.3, fat: 13.3, defaultQty: 300, healthyScore: 84 },
+  { name: "Lasaña tradicional", category: "preparadas", dishGroup: "Pastas y horno", base: "100g", kcal: 240, protein: 11, carbs: 16, fat: 14, defaultQty: 300, healthyScore: 62 },
+  { name: "Pastel de papa", category: "preparadas", dishGroup: "Pastas y horno", base: "100g", kcal: 160, protein: 9, carbs: 13, fat: 8, defaultQty: 300, healthyScore: 76 },
+  { name: "Pastel de papa light", category: "preparadas", dishGroup: "Pastas y horno", base: "100g", kcal: 123, protein: 10, carbs: 11, fat: 4.5, defaultQty: 300, healthyScore: 82 },
+  { name: "Canelones de ricota y espinaca", category: "preparadas", dishGroup: "Pastas y horno", base: "100g", kcal: 157, protein: 9, carbs: 14, fat: 7, defaultQty: 300, healthyScore: 74 },
+  { name: "Canelones de carne", category: "preparadas", dishGroup: "Pastas y horno", base: "100g", kcal: 187, protein: 12, carbs: 13, fat: 9, defaultQty: 300, healthyScore: 68 },
+  { name: "Moussaka de berenjena", category: "preparadas", dishGroup: "Pastas y horno", base: "100g", kcal: 180, protein: 12, carbs: 8, fat: 11, defaultQty: 300, healthyScore: 82 },
+
+  // ---------- Pizzas ----------
+  { name: "Pizza muzzarella", category: "preparadas", dishGroup: "Pizzas", base: "100g", kcal: 273, protein: 11, carbs: 28, fat: 13, defaultQty: 200, healthyScore: 55 },
+  { name: "Pizza jamón y morrón", category: "preparadas", dishGroup: "Pizzas", base: "100g", kcal: 291, protein: 14, carbs: 27, fat: 14, defaultQty: 200, healthyScore: 54 },
+  { name: "Pizza napolitana", category: "preparadas", dishGroup: "Pizzas", base: "100g", kcal: 268, protein: 11, carbs: 27, fat: 12, defaultQty: 200, healthyScore: 58 },
+  { name: "Pizza proteica (masa de pollo)", category: "preparadas", dishGroup: "Pizzas", base: "100g", kcal: 157, protein: 20, carbs: 7, fat: 5, defaultQty: 200, healthyScore: 90 },
+  { name: "Pizza proteica (pollo, avena y huevo)", category: "preparadas", dishGroup: "Pizzas", base: "100g", kcal: 173, protein: 17, carbs: 11, fat: 6, defaultQty: 200, healthyScore: 88 },
+
+  // ---------- Tartas ----------
+  { name: "Tarta de pollo", category: "preparadas", dishGroup: "Tartas", base: "100g", kcal: 188, protein: 14, carbs: 10, fat: 9, defaultQty: 200, healthyScore: 76 },
+  { name: "Tarta de atún", category: "preparadas", dishGroup: "Tartas", base: "100g", kcal: 180, protein: 14, carbs: 10, fat: 8, defaultQty: 200, healthyScore: 78 },
+  { name: "Tarta jamón y queso", category: "preparadas", dishGroup: "Tartas", base: "100g", kcal: 204, protein: 11, carbs: 12, fat: 11, defaultQty: 200, healthyScore: 60 },
+  { name: "Tarta de verduras", category: "preparadas", dishGroup: "Tartas", base: "100g", kcal: 156, protein: 7, carbs: 13, fat: 7, defaultQty: 200, healthyScore: 80 },
+  { name: "Tarta de avena, manzana y canela", category: "preparadas", dishGroup: "Tartas", base: "100g", kcal: 210, protein: 7, carbs: 30, fat: 7, defaultQty: 200, healthyScore: 74 },
+
+  // ---------- Wraps ----------
+  { name: "Wrap de pollo", category: "preparadas", dishGroup: "Wraps", base: "100g", kcal: 190, protein: 16, carbs: 13, fat: 6, defaultQty: 250, healthyScore: 84 },
+  { name: "Wrap de carne", category: "preparadas", dishGroup: "Wraps", base: "100g", kcal: 210, protein: 16, carbs: 14, fat: 8, defaultQty: 250, healthyScore: 78 },
+  { name: "Wrap de cerdo", category: "preparadas", dishGroup: "Wraps", base: "100g", kcal: 215, protein: 15, carbs: 14, fat: 9, defaultQty: 250, healthyScore: 74 },
+  { name: "Wrap vegetariano", category: "preparadas", dishGroup: "Wraps", base: "100g", kcal: 160, protein: 7, carbs: 16, fat: 6, defaultQty: 250, healthyScore: 80 },
+
+  // ---------- Hamburguesas ----------
+  { name: "Hamburguesa completa", category: "preparadas", dishGroup: "Hamburguesas", base: "100g", kcal: 240, protein: 13, carbs: 16, fat: 13, defaultQty: 220, healthyScore: 48 },
+  { name: "Hamburguesa simple", category: "preparadas", dishGroup: "Hamburguesas", base: "100g", kcal: 210, protein: 13, carbs: 15, fat: 10, defaultQty: 220, healthyScore: 56 },
+  { name: "Hamburguesa proteica", category: "preparadas", dishGroup: "Hamburguesas", base: "100g", kcal: 188, protein: 17, carbs: 11, fat: 7, defaultQty: 220, healthyScore: 74 },
+
+  // ---------- Carnes con guarnición ----------
+  { name: "Pollo con arroz y verduras", category: "preparadas", dishGroup: "Carnes con guarnición", base: "100g", kcal: 111, protein: 9, carbs: 9, fat: 2, defaultQty: 350, healthyScore: 96 },
+  { name: "Carne con puré", category: "preparadas", dishGroup: "Carnes con guarnición", base: "100g", kcal: 155, protein: 9.5, carbs: 10.5, fat: 7, defaultQty: 350, healthyScore: 82 },
+  { name: "Pollo con puré", category: "preparadas", dishGroup: "Carnes con guarnición", base: "100g", kcal: 135, protein: 10.5, carbs: 10, fat: 4, defaultQty: 350, healthyScore: 88 },
+  { name: "Atún con arroz y tomate", category: "preparadas", dishGroup: "Carnes con guarnición", base: "100g", kcal: 131, protein: 11, carbs: 10, fat: 2, defaultQty: 350, healthyScore: 94 },
+  { name: "Atún con arroz y huevo", category: "preparadas", dishGroup: "Carnes con guarnición", base: "100g", kcal: 147, protein: 13, carbs: 9, fat: 5, defaultQty: 350, healthyScore: 92 },
+  { name: "Pollo con papas al horno", category: "preparadas", dishGroup: "Carnes con guarnición", base: "100g", kcal: 140, protein: 11, carbs: 10, fat: 4, defaultQty: 350, healthyScore: 88 },
+
+  // ---------- Bowls ----------
+  { name: "Bowl de pollo y arroz", category: "preparadas", dishGroup: "Bowls", base: "100g", kcal: 130, protein: 10.5, carbs: 10.5, fat: 2.5, defaultQty: 350, healthyScore: 94 },
+  { name: "Bowl de atún y arroz", category: "preparadas", dishGroup: "Bowls", base: "100g", kcal: 131, protein: 11, carbs: 10, fat: 2, defaultQty: 350, healthyScore: 94 },
+  { name: "Bowl de pollo y verduras", category: "preparadas", dishGroup: "Bowls", base: "100g", kcal: 111, protein: 12, carbs: 5, fat: 3, defaultQty: 350, healthyScore: 98 },
+  { name: "Bowl de huevo y arroz", category: "preparadas", dishGroup: "Bowls", base: "100g", kcal: 146, protein: 8, carbs: 11, fat: 6, defaultQty: 350, healthyScore: 88 },
+
+  // ---------- Desayunos y meriendas ----------
+  { name: "Pancake proteico", category: "preparadas", dishGroup: "Desayunos y meriendas", base: "100g", kcal: 191, protein: 15.5, carbs: 17, fat: 5.5, defaultQty: 150, healthyScore: 92 },
+  { name: "Pancake de avena y cacao", category: "preparadas", dishGroup: "Desayunos y meriendas", base: "100g", kcal: 177, protein: 13, carbs: 18, fat: 4.5, defaultQty: 150, healthyScore: 88 },
+  { name: "Cheesecake proteico", category: "preparadas", dishGroup: "Desayunos y meriendas", base: "100g", kcal: 156, protein: 13, carbs: 10, fat: 5.5, defaultQty: 150, healthyScore: 84 },
+  { name: "Yogur con frutos rojos", category: "preparadas", dishGroup: "Desayunos y meriendas", base: "100g", kcal: 82, protein: 8, carbs: 8, fat: 1, defaultQty: 150, healthyScore: 94 },
+  { name: "Avena cocida con manzana", category: "preparadas", dishGroup: "Desayunos y meriendas", base: "100g", kcal: 120, protein: 4, carbs: 19, fat: 2.5, defaultQty: 150, healthyScore: 92 },
+
+  // ---------- Rápidas saludables ----------
+  { name: "Zapallitos revueltos con huevo", category: "preparadas", dishGroup: "Rápidas saludables", base: "100g", kcal: 91, protein: 7, carbs: 5, fat: 4.5, defaultQty: 250, healthyScore: 92 },
+  { name: "Revuelto Gramajo saludable", category: "preparadas", dishGroup: "Rápidas saludables", base: "100g", kcal: 137, protein: 10, carbs: 10, fat: 5.5, defaultQty: 250, healthyScore: 80 },
+  { name: "Omelette de verduras", category: "preparadas", dishGroup: "Rápidas saludables", base: "100g", kcal: 120, protein: 11, carbs: 4, fat: 7, defaultQty: 250, healthyScore: 92 },
+  { name: "Arroz con huevo", category: "preparadas", dishGroup: "Rápidas saludables", base: "100g", kcal: 143, protein: 6.5, carbs: 14, fat: 5, defaultQty: 250, healthyScore: 78 },
+  { name: "Arroz con atún", category: "preparadas", dishGroup: "Rápidas saludables", base: "100g", kcal: 137, protein: 12, carbs: 12, fat: 2, defaultQty: 250, healthyScore: 88 },
 ];

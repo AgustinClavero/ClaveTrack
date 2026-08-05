@@ -16,6 +16,8 @@ export interface DayFoodFacts {
   vegetableServings: number;
   fruitServings: number;
   processedKcal: number;
+  qualityScoreSum: number;
+  qualityScoredKcal: number;
 }
 
 interface ItemRow {
@@ -36,7 +38,7 @@ export async function dayFoodFacts(supabase: ServerClient, userId: string, date:
   const ids = [...new Set(items.map((i) => i.food_id).filter((x): x is string => !!x))];
 
   const foods = ids.length
-    ? (await supabase.from("foods").select("id, category, is_processed").eq("user_id", userId).in("id", ids)).data ?? []
+    ? (await supabase.from("foods").select("id, category, is_processed, healthy_score").eq("user_id", userId).in("id", ids)).data ?? []
     : [];
   const byId = new Map(foods.map((f) => [f.id, f]));
 
@@ -49,10 +51,24 @@ export async function dayFoodFacts(supabase: ServerClient, userId: string, date:
       const f = it.food_id ? byId.get(it.food_id) : undefined;
       if (f?.category === "verduras") acc.vegetableServings += 1;
       if (f?.category === "frutas") acc.fruitServings += 1;
-      if (f?.is_processed) acc.processedKcal += kcal;
+      if (f?.healthy_score != null) {
+        acc.qualityScoreSum += f.healthy_score * kcal;
+        acc.qualityScoredKcal += kcal;
+      } else if (f?.is_processed) {
+        acc.processedKcal += kcal;
+      }
       return acc;
     },
-    { kcal: 0, protein: 0, mealCount: (meals ?? []).length, vegetableServings: 0, fruitServings: 0, processedKcal: 0 }
+    {
+      kcal: 0,
+      protein: 0,
+      mealCount: (meals ?? []).length,
+      vegetableServings: 0,
+      fruitServings: 0,
+      processedKcal: 0,
+      qualityScoreSum: 0,
+      qualityScoredKcal: 0,
+    }
   );
 }
 

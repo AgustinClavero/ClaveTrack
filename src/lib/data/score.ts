@@ -73,6 +73,8 @@ export async function materializeDayScore(supabase: ServerClient, userId: string
     vegetableServings: facts.vegetableServings,
     fruitServings: facts.fruitServings,
     processedKcal: facts.processedKcal,
+    qualityScoreSum: facts.qualityScoreSum,
+    qualityScoredKcal: facts.qualityScoredKcal,
     // Solo hábitos ACTIVOS: los archivados no puntúan aunque tengan entry.
     habits: activeHabits.map((h) => ({ done: entryByHabit.get(h.id) ?? false })),
     sleepQuality: logRes.data?.sleep_quality ?? null,

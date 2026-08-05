@@ -79,6 +79,8 @@ export interface DayAreaInputs {
   vegetableServings?: number;
   fruitServings?: number;
   processedKcal?: number;
+  qualityScoreSum?: number;
+  qualityScoredKcal?: number;
   /** Hábitos ACTIVOS del día con su estado. */
   habits: { done: boolean }[];
   /** Calidad de sueño 1..10 del check-in (null = sin dato). */
@@ -97,6 +99,8 @@ export function nutritionAreaFor(i: DayAreaInputs): NutritionResult {
     vegetableServings: i.vegetableServings ?? 0,
     fruitServings: i.fruitServings ?? 0,
     processedKcal: i.processedKcal ?? 0,
+    qualityScoreSum: i.qualityScoreSum ?? 0,
+    qualityScoredKcal: i.qualityScoredKcal ?? 0,
     mealCount: i.mealCount,
   });
 }

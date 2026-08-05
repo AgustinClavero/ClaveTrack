@@ -253,6 +253,9 @@ export async function seedDefaultFoods(): Promise<ActionResult<{ inserted: numbe
     is_favorite: f.favorite ?? false,
     is_mix: f.isMix ?? false,
     is_dressing: f.isDressing ?? false,
+    is_processed: f.isProcessed ?? false,
+    healthy_score: f.healthyScore ?? null,
+    dish_group: f.dishGroup ?? null,
     default_qty: f.defaultQty ?? null,
   }));
   if (rows.length === 0) return { ok: true, data: { inserted: 0 } };

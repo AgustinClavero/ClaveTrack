@@ -158,6 +158,11 @@ export async function completeOnboarding(input: unknown): Promise<ActionResult> 
         unit_grams: f.unitGrams ?? null,
         state: f.state ?? null,
         is_favorite: f.favorite ?? false,
+        is_mix: f.isMix ?? false,
+        is_dressing: f.isDressing ?? false,
+        is_processed: f.isProcessed ?? false,
+        healthy_score: f.healthyScore ?? null,
+        dish_group: f.dishGroup ?? null,
       }))
     );
   }

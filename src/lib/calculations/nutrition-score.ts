@@ -98,35 +98,40 @@ export function fruitScore(servings: number, hasMeals: boolean): Part {
 }
 
 /**
- * Calidad: qué proporción de las calorías vino de comida real.
- * Sin ítems marcados como ultraprocesados no hay nada que juzgar.
+ * Calidad de lo que se comió, ponderada por calorías: una pizza de 600 kcal
+ * pesa el triple que una ensalada de 200 al juzgar el día.
+ *
+ * `scoredKcal` son las calorías con puntuación conocida (platos del catálogo).
+ * Los ultraprocesados sin puntaje entran con un valor bajo fijo; los alimentos
+ * simples sin puntuar no se juzgan: no hay nada que decir de 100 g de pollo.
  */
-export function qualityScore(processedKcal: number, totalKcal: number): Part {
+export function qualityScore(input: { scoreSum: number; scoredKcal: number; processedKcal: number; totalKcal: number }): Part {
+  const { scoreSum, scoredKcal, processedKcal, totalKcal } = input;
   if (totalKcal <= 0) return { value: 0, hasData: false };
-  const share = processedKcal / totalKcal;
-  return {
-    value: band(1 - share, [
-      [0.9, 100],
-      [0.8, 90],
-      [0.65, 75],
-      [0.5, 55],
-      [0, 30],
-    ]),
-    hasData: true,
-  };
+
+  // Los ultraprocesados sin healthy_score cuentan como 35 sobre 100.
+  const unscoredProcessed = Math.max(0, processedKcal - 0);
+  const sum = scoreSum + unscoredProcessed * PROCESSED_QUALITY;
+  const weight = scoredKcal + unscoredProcessed;
+  if (weight <= 0) return { value: 0, hasData: false };
+
+  return { value: Math.round(sum / weight), hasData: true };
 }
+
+/** Cuánto vale nutricionalmente un ultraprocesado sin puntaje propio. */
+const PROCESSED_QUALITY = 35;
 
 // ---------- Score compuesto ----------
 export type NutritionPartKey = "calories" | "protein" | "vegetables" | "fruit" | "water" | "quality";
 
 /** Cuánto pesa cada decisión. Se renormaliza sobre las que tienen dato. */
 export const NUTRITION_WEIGHTS: Record<NutritionPartKey, number> = {
-  calories: 30,
-  protein: 30,
+  calories: 28,
+  protein: 28,
   vegetables: 12,
-  fruit: 8,
+  fruit: 7,
   water: 10,
-  quality: 10,
+  quality: 15,
 };
 
 export interface NutritionInputs {
@@ -139,6 +144,10 @@ export interface NutritionInputs {
   vegetableServings: number;
   fruitServings: number;
   processedKcal: number;
+  /** Σ (healthy_score × kcal) de los ítems puntuados. */
+  qualityScoreSum: number;
+  /** Calorías que aportaron esos ítems. */
+  qualityScoredKcal: number;
   mealCount: number;
 }
 
@@ -155,7 +164,12 @@ export function nutritionScore(i: NutritionInputs): NutritionResult {
     vegetables: vegetableScore(i.vegetableServings, hasMeals),
     fruit: fruitScore(i.fruitServings, hasMeals),
     water: waterScore(i.waterL, i.waterGoalL),
-    quality: qualityScore(i.processedKcal, i.kcal),
+    quality: qualityScore({
+      scoreSum: i.qualityScoreSum,
+      scoredKcal: i.qualityScoredKcal,
+      processedKcal: i.processedKcal,
+      totalKcal: i.kcal,
+    }),
   };
 
   const keys = Object.keys(NUTRITION_WEIGHTS) as NutritionPartKey[];

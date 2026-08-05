@@ -210,6 +210,8 @@ export type Database = {
           is_favorite: boolean
           is_mix: boolean
           is_processed: boolean
+          healthy_score: number | null
+          dish_group: string | null
           kcal: number
           name: string
           protein_g: number
@@ -235,6 +237,8 @@ export type Database = {
           is_favorite?: boolean
           is_mix?: boolean
           is_processed?: boolean
+          healthy_score?: number | null
+          dish_group?: string | null
           kcal?: number
           name: string
           protein_g?: number
@@ -260,6 +264,8 @@ export type Database = {
           is_favorite?: boolean
           is_mix?: boolean
           is_processed?: boolean
+          healthy_score?: number | null
+          dish_group?: string | null
           kcal?: number
           name?: string
           protein_g?: number
