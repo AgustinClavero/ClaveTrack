@@ -124,14 +124,20 @@ const PROCESSED_QUALITY = 35;
 // ---------- Score compuesto ----------
 export type NutritionPartKey = "calories" | "protein" | "vegetables" | "fruit" | "water" | "quality";
 
-/** Cuánto pesa cada decisión. Se renormaliza sobre las que tienen dato. */
+/**
+ * Cuánto pesa cada decisión. Se renormaliza sobre las que tienen dato.
+ *
+ * La calidad pesa casi como las calorías a propósito: un día de pizza que
+ * cierra los macros no puede valer lo mismo que uno de comida real. Con un
+ * peso chico la diferencia era de seis puntos y no se notaba.
+ */
 export const NUTRITION_WEIGHTS: Record<NutritionPartKey, number> = {
-  calories: 28,
-  protein: 28,
-  vegetables: 12,
-  fruit: 7,
+  calories: 25,
+  protein: 25,
+  vegetables: 10,
+  fruit: 5,
   water: 10,
-  quality: 15,
+  quality: 25,
 };
 
 export interface NutritionInputs {
