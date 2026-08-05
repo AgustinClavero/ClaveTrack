@@ -3,16 +3,19 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Plus } from "lucide-react";
-import { NAV_FULL, NAV_SECONDARY } from "./nav-items";
+import { NAV_FULL, NAV_SECONDARY, withDay } from "./nav-items";
+import { useActiveDay } from "@/lib/hooks/use-active-day";
 import { useUIStore } from "@/lib/store";
 import { LogoutButton } from "./LogoutButton";
 import { ThemeToggle } from "./ThemeToggle";
+import { StreakBadge } from "./StreakBadge";
 import { CheckinButton } from "./CheckinButton";
 import { NotificationBell } from "./NotificationBell";
 import type { Insight } from "@/lib/calculations/insights";
 
 export function Sidebar({ streak, alerts }: { streak: number; alerts: Insight[] }) {
   const pathname = usePathname();
+  const day = useActiveDay();
   const openSheet = useUIStore((s) => s.openSheet);
 
   return (
@@ -24,7 +27,7 @@ export function Sidebar({ streak, alerts }: { streak: number; alerts: Insight[] 
 
       <nav className="side-nav">
         {NAV_FULL.map((n) => (
-          <Link key={n.href} href={n.href} className={`side-link${pathname === n.href ? " active" : ""}`}>
+          <Link key={n.href} href={withDay(n.href, day)} className={`side-link${pathname === n.href ? " active" : ""}`}>
             <span className="ic">
               <n.Icon size={19} strokeWidth={2} />
             </span>
@@ -42,22 +45,19 @@ export function Sidebar({ streak, alerts }: { streak: number; alerts: Insight[] 
 
       <div className="side-foot">
         <div className="side-streak">
-          <span className="streak-pill">🔥 {streak}</span>
-          <span className="ss-lab">racha de días</span>
+          <StreakBadge streak={streak} />
           <NotificationBell items={alerts} />
         </div>
         {NAV_SECONDARY.map((n) => (
-          <Link key={n.href} href={n.href} className={`side-link${pathname === n.href ? " active" : ""}`}>
+          <Link key={n.href} href={withDay(n.href, day)} className={`side-link${pathname === n.href ? " active" : ""}`}>
             <span className="ic">
               <n.Icon size={19} strokeWidth={2} />
             </span>
             {n.label}
           </Link>
         ))}
-        <div className="side-tools">
-          <CheckinButton variant="wide" />
-          <ThemeToggle />
-        </div>
+        <CheckinButton variant="wide" />
+        <ThemeToggle variant="switch" />
         <LogoutButton variant="side" />
       </div>
     </aside>

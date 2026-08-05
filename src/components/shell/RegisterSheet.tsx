@@ -10,9 +10,9 @@ export function RegisterSheet() {
   const closeSheet = useUIStore((s) => s.closeSheet);
 
   const ACTIONS = [
-    { icon: "🍽", name: "Comida", go: () => openSheet("meal") },
+    { icon: "🍽", name: "Nutrición", go: () => openSheet("nutrition") },
     { icon: "🏃", name: "Actividad", go: () => openSheet("workout") },
-    { icon: "✅", name: "Hábito", go: () => openSheet("habit") },
+    { icon: "🗓", name: "Rutina", go: () => openSheet("routine") },
     { icon: "⚖️", name: "Peso", go: () => openSheet("weight") },
     { icon: "📋", name: "Check-in", go: () => openSheet("checkin") },
   ];
