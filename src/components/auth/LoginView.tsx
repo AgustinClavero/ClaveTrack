@@ -118,6 +118,12 @@ export function LoginView() {
       </div>
 
       <div className="login-body">
+        {/* Curva de empalme: el corte recto entre el mosaico y el blanco se
+            veía duro. El path tapa la unión con el mismo color del bloque. */}
+        <svg className="body-wave" viewBox="0 0 375 44" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M0,44 C70,4 130,0 187.5,0 C245,0 305,4 375,44 Z" />
+        </svg>
+
         <div className="login-auth">
           <div className="tabs auth-tabs" role="tablist">
             <button role="tab" aria-selected={mode === "signin"} className={`tab${mode === "signin" ? " active" : ""}`} onClick={() => switchMode("signin")}>
