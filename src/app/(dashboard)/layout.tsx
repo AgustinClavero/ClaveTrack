@@ -8,6 +8,7 @@ import { WeightSheet } from "@/components/modules/WeightSheet";
 import { WorkoutSheet } from "@/components/modules/WorkoutSheet";
 import { RoutineSheet } from "@/components/modules/RoutineSheet";
 import { NutritionSheet } from "@/components/modules/NutritionSheet";
+import { WorkCreateSheet } from "@/components/modules/WorkCreateSheet";
 import { DaySummarySheet } from "@/components/modules/DaySummarySheet";
 import { DayDetailSheet } from "@/components/modules/DayDetailSheet";
 import { MobileHeader } from "@/components/shell/MobileHeader";
@@ -32,6 +33,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <WorkoutSheet weightKg={shell.lastWeightKg ?? 0} heightCm={shell.heightCm} />
       <RoutineSheet habits={shell.habits} />
       <NutritionSheet habits={shell.habits} />
+      <WorkCreateSheet />
       <DaySummarySheet />
       <DayDetailSheet />
     </div>

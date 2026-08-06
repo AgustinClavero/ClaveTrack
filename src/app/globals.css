@@ -6868,24 +6868,6 @@ label,
   cursor: pointer;
 }
 
-/* Botón de alta del módulo: sobre la barra inferior, no encima del FAB. */
-.work-fab {
-  position: fixed;
-  right: var(--sp-5);
-  bottom: calc(104px + env(safe-area-inset-bottom));
-  width: 48px;
-  height: 48px;
-  display: grid;
-  place-items: center;
-  border: 0;
-  border-radius: var(--r-pill);
-  background: var(--ink);
-  color: var(--ink-contrast);
-  box-shadow: var(--shadow-nav);
-  cursor: pointer;
-  z-index: 40;
-}
-
 /* Pomodoro */
 .pomo {
   display: flex;
@@ -6930,8 +6912,5 @@ label,
   .kan-col {
     flex: 1 1 0;
     max-width: none;
-  }
-  .work-fab {
-    bottom: var(--sp-6);
   }
 }

@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Circle, Plus, Timer, Trash2, X } from "lucide-react";
+import { Check, Circle, Trash2, X } from "lucide-react";
 import {
   upsertTask,
   setTaskStatus,
@@ -10,9 +10,6 @@ import {
   upsertTaskItem,
   toggleTaskItem,
   deleteTaskItem,
-  upsertProject,
-  upsertObjective,
-  logPomodoro,
 } from "@/app/actions";
 import { PRIORITY_LABEL, PRIORITY_RANK, TASK_STATUS_LABEL, dueLabel, type TaskStatus } from "@/lib/calculations/work";
 import type { WorkData, Task } from "@/lib/data/queries";
@@ -31,7 +28,6 @@ export function WorkBoard({ data }: { data: WorkData }) {
   const [, startTransition] = useTransition();
   const [view, setView] = useState<View>("hoy");
   const [open, setOpen] = useState<Task | null>(null);
-  const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const { today, tasks, projects, objectives } = data;
@@ -229,12 +225,8 @@ export function WorkBoard({ data }: { data: WorkData }) {
         </div>
       )}
 
-      <button className="work-fab" onClick={() => setCreating(true)} aria-label="Crear">
-        <Plus size={22} strokeWidth={2.5} />
-      </button>
-
+      {/* El alta vive en el "+" principal: un solo botón de crear en la app. */}
       {open && <TaskSheet task={open} projects={projects} today={today} onClose={() => setOpen(null)} />}
-      {creating && <CreateSheet projects={projects} objectives={objectives} today={today} onClose={() => setCreating(false)} />}
     </>
   );
 }
@@ -459,109 +451,6 @@ function TaskSheet({
       </button>
       <button className="task-del" onClick={remove}>
         <Trash2 size={15} /> Borrar tarea
-      </button>
-    </Sheet>
-  );
-}
-
-// ---------- Alta rápida ----------
-
-function CreateSheet({
-  projects,
-  objectives,
-  today,
-  onClose,
-}: {
-  projects: WorkData["projects"];
-  objectives: WorkData["objectives"];
-  today: string;
-  onClose: () => void;
-}) {
-  const router = useRouter();
-  const [, startTransition] = useTransition();
-  const [kind, setKind] = useState<"tarea" | "proyecto" | "objetivo">("tarea");
-  const [title, setTitle] = useState("");
-  const [projectId, setProjectId] = useState("");
-  const [objectiveId, setObjectiveId] = useState("");
-  const [due, setDue] = useState(today);
-  const [error, setError] = useState<string | null>(null);
-
-  function create() {
-    if (!title.trim()) return;
-    setError(null);
-    startTransition(async () => {
-      const res =
-        kind === "tarea"
-          ? await upsertTask({ title, projectId: projectId || null, dueDate: due || null })
-          : kind === "proyecto"
-            ? await upsertProject({ name: title, objectiveId: objectiveId || null })
-            : await upsertObjective({ title });
-      if (!res.ok) return setError(res.error);
-      onClose();
-      router.refresh();
-    });
-  }
-
-  return (
-    <Sheet open onClose={onClose} title="Crear" className="task-sheet">
-      <div className="tabs">
-        {(["tarea", "proyecto", "objetivo"] as const).map((k) => (
-          <button key={k} className={`tab${kind === k ? " active" : ""}`} onClick={() => setKind(k)}>
-            {k === "tarea" ? "Tarea" : k === "proyecto" ? "Proyecto" : "Objetivo"}
-          </button>
-        ))}
-      </div>
-
-      <div className="ci-field">
-        <div className="lab">
-          <span>{kind === "tarea" ? "¿Qué hay que hacer?" : "Nombre"}</span>
-        </div>
-        <input className="ci-input" value={title} onChange={(e) => setTitle(e.target.value)} autoFocus />
-      </div>
-
-      {kind === "tarea" && (
-        <>
-          <div className="ci-field">
-            <div className="lab">
-              <span>Para cuándo</span>
-            </div>
-            <input className="ci-input" type="date" value={due} onChange={(e) => setDue(e.target.value)} />
-          </div>
-          <div className="ci-field">
-            <div className="lab">
-              <span>Proyecto</span>
-            </div>
-            <select className="ci-input" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
-              <option value="">Sin proyecto</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </>
-      )}
-
-      {kind === "proyecto" && objectives.length > 0 && (
-        <div className="ci-field">
-          <div className="lab">
-            <span>Objetivo</span>
-          </div>
-          <select className="ci-input" value={objectiveId} onChange={(e) => setObjectiveId(e.target.value)}>
-            <option value="">Sin objetivo</option>
-            {objectives.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.title}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {error && <p className="form-error">{error}</p>}
-      <button className="ci-save" onClick={create} disabled={!title.trim()}>
-        Crear
       </button>
     </Sheet>
   );

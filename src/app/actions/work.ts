@@ -276,3 +276,19 @@ export async function logPomodoro(input: unknown): Promise<ActionResult> {
   revalidateWork();
   return { ok: true, data: undefined };
 }
+
+/** Proyectos y objetivos para los selectores del alta rápida. */
+export async function fetchWorkOptions(): Promise<
+  ActionResult<{ projects: { id: string; name: string }[]; objectives: { id: string; title: string }[]; today: string }>
+> {
+  const ctx = await getUserContext();
+  if (!ctx) return { ok: false, error: "Sesión expirada." };
+  const supabase = getServerClient();
+
+  const [p, o] = await Promise.all([
+    supabase.from("projects").select("id, name").eq("user_id", ctx.userId).neq("status", "archivado").order("display_order"),
+    supabase.from("objectives").select("id, title").eq("user_id", ctx.userId).neq("status", "archivado").order("display_order"),
+  ]);
+
+  return { ok: true, data: { projects: p.data ?? [], objectives: o.data ?? [], today: ctx.today } };
+}

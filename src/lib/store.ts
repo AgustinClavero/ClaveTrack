@@ -3,7 +3,7 @@
 import { create } from "zustand";
 
 /** Hojas/modales de la app. Solo puede haber una abierta a la vez. */
-export type SheetId = "register" | "checkin" | "meal" | "weight" | "workout" | "routine" | "nutrition" | "summary" | "dayDetail";
+export type SheetId = "register" | "checkin" | "meal" | "weight" | "workout" | "routine" | "nutrition" | "work" | "summary" | "dayDetail";
 
 interface UIState {
   activeSheet: SheetId | null;

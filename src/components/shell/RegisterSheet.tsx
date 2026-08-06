@@ -13,6 +13,7 @@ export function RegisterSheet() {
     { icon: "🍽", name: "Nutrición", go: () => openSheet("nutrition") },
     { icon: "🏃", name: "Actividad", go: () => openSheet("workout") },
     { icon: "🗓", name: "Rutina", go: () => openSheet("routine") },
+    { icon: "🗂", name: "Tarea", go: () => openSheet("work") },
     { icon: "⚖️", name: "Peso", go: () => openSheet("weight") },
     { icon: "📋", name: "Check-in", go: () => openSheet("checkin") },
   ];
