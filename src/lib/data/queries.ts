@@ -18,6 +18,7 @@ import {
   type DayScore,
 } from "@/lib/calculations/scoring";
 import { computeAchievements, dayInsights, type Achievement, type Insight } from "@/lib/calculations/insights";
+import { projectProgress, objectiveProgress, type TaskStatus, type TaskPriority } from "@/lib/calculations/work";
 import { daySummary, type DaySummary } from "@/lib/calculations/day-summary";
 import type { NutritionResult } from "@/lib/calculations/nutrition-score";
 import { dayFoodFacts } from "./nutrition-day";
@@ -236,7 +237,7 @@ export async function getDashboard(): Promise<Dashboard | null> {
   // Ventana amplia: el calendario se desliza al mes anterior y al siguiente.
   const weekCells = dayWindow(45, 30, timezone);
 
-  const [goalsRes, mealsRes, habitsRes, entriesRes, lastWeightRes, logRes, historyRes, facts] = await Promise.all([
+  const [goalsRes, mealsRes, habitsRes, entriesRes, lastWeightRes, logRes, historyRes, facts, tasksRes] = await Promise.all([
     supabase
       .from("nutrition_goals")
       .select("kcal, protein_g, carbs_g, fat_g, water_ml")
@@ -267,6 +268,7 @@ export async function getDashboard(): Promise<Dashboard | null> {
       .maybeSingle(),
     getScoreHistory(ctx),
     dayFoodFacts(supabase, ctx.userId, date),
+    supabase.from("tasks").select("status, due_date").eq("user_id", ctx.userId).lte("due_date", date),
   ]);
 
   const goalRow = goalsRes.data?.[0];
@@ -296,6 +298,8 @@ export async function getDashboard(): Promise<Dashboard | null> {
     qualityScoredKcal: facts.qualityScoredKcal,
     habits: habits.map((h) => ({ done: h.done })),
     sleepQuality: log?.sleep_quality ?? null,
+    tasks: (tasksRes.data ?? []).map((t) => ({ status: t.status as TaskStatus, dueDate: t.due_date })),
+    today: date,
   };
   const areas = computeAreasForDay(areaInputs);
   const score = computeDay(areas, ctx.weights);
@@ -1157,5 +1161,131 @@ export async function getDaySummary(day: string): Promise<DaySummaryPayload | nu
       dayTotal,
     }),
     parts: nutrition.parts,
+  };
+}
+
+// ============================================================
+// Trabajo: objetivos, proyectos y tareas
+// ============================================================
+
+export interface TaskItemRow {
+  id: string;
+  title: string;
+  done: boolean;
+}
+
+export interface Task {
+  id: string;
+  projectId: string | null;
+  title: string;
+  description: string | null;
+  status: TaskStatus;
+  priority: TaskPriority;
+  dueDate: string | null;
+  estimateMin: number | null;
+  items: TaskItemRow[];
+}
+
+export interface Project {
+  id: string;
+  objectiveId: string | null;
+  name: string;
+  emoji: string | null;
+  color: string | null;
+  status: string;
+  progress: number;
+  taskCount: number;
+}
+
+export interface Objective {
+  id: string;
+  title: string;
+  description: string | null;
+  emoji: string | null;
+  targetDate: string | null;
+  status: string;
+  progress: number;
+}
+
+export interface WorkData {
+  today: string;
+  objectives: Objective[];
+  projects: Project[];
+  tasks: Task[];
+  /** Minutos de foco registrados hoy. */
+  pomodoroToday: number;
+}
+
+export async function getWork(): Promise<WorkData | null> {
+  const ctx = await getUserContext();
+  if (!ctx) return null;
+  const supabase = getServerClient();
+
+  const [objRes, projRes, taskRes, itemRes, pomoRes] = await Promise.all([
+    supabase.from("objectives").select("*").eq("user_id", ctx.userId).neq("status", "archivado").order("display_order"),
+    supabase.from("projects").select("*").eq("user_id", ctx.userId).neq("status", "archivado").order("display_order"),
+    supabase
+      .from("tasks")
+      .select("id, project_id, title, description, status, priority, due_date, estimate_min")
+      .eq("user_id", ctx.userId)
+      .order("display_order"),
+    supabase.from("task_items").select("id, task_id, title, done").eq("user_id", ctx.userId).order("display_order"),
+    supabase
+      .from("pomodoro_sessions")
+      .select("minutes")
+      .eq("user_id", ctx.userId)
+      .eq("log_date", ctx.today)
+      .eq("kind", "foco"),
+  ]);
+
+  const itemsByTask = new Map<string, TaskItemRow[]>();
+  (itemRes.data ?? []).forEach((i) => {
+    const list = itemsByTask.get(i.task_id) ?? [];
+    list.push({ id: i.id, title: i.title, done: i.done });
+    itemsByTask.set(i.task_id, list);
+  });
+
+  const tasks: Task[] = (taskRes.data ?? []).map((t) => ({
+    id: t.id,
+    projectId: t.project_id,
+    title: t.title,
+    description: t.description,
+    status: t.status as TaskStatus,
+    priority: t.priority as TaskPriority,
+    dueDate: t.due_date,
+    estimateMin: t.estimate_min,
+    items: itemsByTask.get(t.id) ?? [],
+  }));
+
+  const projects: Project[] = (projRes.data ?? []).map((p) => {
+    const mine = tasks.filter((t) => t.projectId === p.id);
+    return {
+      id: p.id,
+      objectiveId: p.objective_id,
+      name: p.name,
+      emoji: p.emoji,
+      color: p.color,
+      status: p.status,
+      progress: projectProgress(mine),
+      taskCount: mine.length,
+    };
+  });
+
+  const objectives: Objective[] = (objRes.data ?? []).map((o) => ({
+    id: o.id,
+    title: o.title,
+    description: o.description,
+    emoji: o.emoji,
+    targetDate: o.target_date,
+    status: o.status,
+    progress: objectiveProgress(projects.filter((p) => p.objectiveId === o.id)),
+  }));
+
+  return {
+    today: ctx.today,
+    objectives,
+    projects,
+    tasks,
+    pomodoroToday: (pomoRes.data ?? []).reduce((s, r) => s + r.minutes, 0),
   };
 }

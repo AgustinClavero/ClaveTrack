@@ -251,3 +251,50 @@ export const onboardingSchema = z.object({
     .max(30),
 });
 export type OnboardingInput = z.infer<typeof onboardingSchema>;
+
+// ---------- Trabajo: objetivos, proyectos, tareas ----------
+const shortText = z.string().trim().min(1).max(120);
+const longText = z.string().trim().max(2000);
+
+export const objectiveSchema = z.object({
+  id: uuid.optional(),
+  title: shortText,
+  description: longText.optional(),
+  emoji: z.string().trim().max(8).optional(),
+  targetDate: isoDate.nullable().optional(),
+  status: z.enum(["activo", "pausado", "logrado", "archivado"]).optional(),
+});
+
+export const projectSchema = z.object({
+  id: uuid.optional(),
+  objectiveId: uuid.nullable().optional(),
+  name: shortText,
+  emoji: z.string().trim().max(8).optional(),
+  color: z.string().trim().max(20).nullable().optional(),
+  status: z.enum(["activo", "pausado", "terminado", "archivado"]).optional(),
+});
+
+export const taskSchema = z.object({
+  id: uuid.optional(),
+  projectId: uuid.nullable().optional(),
+  title: shortText,
+  description: longText.nullable().optional(),
+  status: z.enum(["pendiente", "haciendo", "hecha"]).optional(),
+  priority: z.enum(["baja", "media", "alta"]).optional(),
+  dueDate: isoDate.nullable().optional(),
+  estimateMin: z.number().int().min(0).max(1440).nullable().optional(),
+});
+
+export const taskItemSchema = z.object({
+  id: uuid.optional(),
+  taskId: uuid,
+  title: shortText,
+  done: z.boolean().optional(),
+});
+
+export const pomodoroSchema = z.object({
+  taskId: uuid.nullable().optional(),
+  minutes: z.number().int().min(1).max(240),
+  kind: z.enum(["foco", "pausa"]).optional(),
+  date: isoDate.optional(),
+});

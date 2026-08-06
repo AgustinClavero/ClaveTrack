@@ -46,7 +46,7 @@ export async function upsertDayScore(
 
 /** Recalcula el score de un día desde la DB y lo materializa. */
 export async function materializeDayScore(supabase: ServerClient, userId: string, date: string) {
-  const [goalsRes, facts, habitsRes, entriesRes, logRes, settingsRes] = await Promise.all([
+  const [goalsRes, facts, habitsRes, entriesRes, logRes, settingsRes, tasksRes] = await Promise.all([
     supabase
       .from("nutrition_goals")
       .select("kcal, protein_g, water_ml")
@@ -58,6 +58,8 @@ export async function materializeDayScore(supabase: ServerClient, userId: string
     supabase.from("habit_entries").select("habit_id, done").eq("user_id", userId).eq("log_date", date),
     supabase.from("daily_logs").select("sleep_quality, water_ml").eq("user_id", userId).eq("log_date", date).maybeSingle(),
     supabase.from("user_settings").select("*").eq("user_id", userId).maybeSingle(),
+    // Tareas del día o vencidas: lo que estaba planificado para hoy.
+    supabase.from("tasks").select("status, due_date").eq("user_id", userId).lte("due_date", date),
   ]);
 
   const goalRow = goalsRes.data?.[0] ?? null;
@@ -78,6 +80,8 @@ export async function materializeDayScore(supabase: ServerClient, userId: string
     // Solo hábitos ACTIVOS: los archivados no puntúan aunque tengan entry.
     habits: activeHabits.map((h) => ({ done: entryByHabit.get(h.id) ?? false })),
     sleepQuality: logRes.data?.sleep_quality ?? null,
+    tasks: (tasksRes.data ?? []).map((t) => ({ status: t.status as "pendiente" | "haciendo" | "hecha", dueDate: t.due_date })),
+    today: date,
   });
 
   const weights = weightsFromSettings(settingsRes.data ?? undefined);

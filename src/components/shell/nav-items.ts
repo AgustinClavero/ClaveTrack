@@ -1,4 +1,4 @@
-import { Home, Utensils, Dumbbell, CalendarDays, LineChart, Settings, type LucideIcon } from "lucide-react";
+import { Home, Utensils, Dumbbell, CalendarDays, LineChart, Settings, Briefcase, type LucideIcon } from "lucide-react";
 
 export interface NavDef {
   href: string;
@@ -20,6 +20,7 @@ export const NAV_FULL: NavDef[] = [
   { href: "/nutrition", label: "Nutrición", Icon: Utensils },
   { href: "/activity", label: "Actividad", Icon: Dumbbell },
   { href: "/routine", label: "Rutina", Icon: CalendarDays },
+  { href: "/work", label: "Trabajo", Icon: Briefcase },
   { href: "/progress", label: "Progreso", Icon: LineChart },
 ];
 

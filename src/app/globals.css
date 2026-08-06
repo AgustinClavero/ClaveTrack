@@ -6592,3 +6592,346 @@ label,
   flex: 0 0 auto;
   color: var(--muted);
 }
+
+/* ============================================================
+   Módulo Trabajo: objetivos, proyectos, tareas, tablero y pomodoro.
+   ============================================================ */
+.work-tabs {
+  display: flex;
+  gap: var(--sp-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-bottom: var(--sp-4);
+}
+.work-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.task-list {
+  list-style: none;
+  margin: var(--sp-3) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.task-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) 0;
+  border-bottom: 1px solid var(--line);
+}
+.task-list li:last-child {
+  border-bottom: 0;
+}
+.task-list.done li,
+.task-list li.done {
+  opacity: 0.55;
+}
+.task-list li.done .tk-t {
+  text-decoration: line-through;
+}
+.tk-check {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease);
+}
+.task-list li.done .tk-check,
+.check-list li.done .tk-check {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+}
+.tk-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.tk-t {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+}
+.tk-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  font-size: var(--fs-2xs);
+  color: var(--text-2);
+  font-weight: 600;
+}
+.tk-meta em {
+  font-style: normal;
+}
+.tk-meta em.late {
+  color: var(--red);
+  font-weight: 800;
+}
+.prio {
+  flex: 0 0 auto;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 3px 8px;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+.prio.alta {
+  background: var(--red-tint);
+  color: var(--red);
+}
+.prio.media {
+  background: var(--amber-tint);
+  color: var(--amber);
+}
+
+/* Tablero */
+.kanban {
+  display: flex;
+  gap: var(--sp-3);
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: var(--sp-2);
+}
+.kanban::-webkit-scrollbar {
+  display: none;
+}
+.kan-col {
+  flex: 0 0 78%;
+  max-width: 320px;
+  background: var(--surface-2);
+  border-radius: var(--r-card);
+  padding: var(--sp-3);
+}
+.kan-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--sp-3);
+}
+.kan-n {
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  color: var(--text-2);
+}
+.kan-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.kan-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: var(--sp-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.kc-title {
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+.kc-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.kc-items {
+  font-size: var(--fs-2xs);
+  color: var(--text-2);
+  font-weight: 700;
+}
+.kc-move {
+  display: flex;
+  gap: var(--sp-1);
+}
+.kc-move button {
+  flex: 1;
+  padding: 6px 4px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.kc-move button:hover {
+  border-color: var(--ink);
+  color: var(--text);
+}
+.kan-empty {
+  margin: 0;
+  padding: var(--sp-4) 0;
+  text-align: center;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
+/* Objetivos */
+.obj-projects {
+  list-style: none;
+  margin: var(--sp-3) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.obj-projects li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+/* Detalle de tarea */
+.check-list {
+  list-style: none;
+  margin: 0 0 var(--sp-2);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.check-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.check-list li span {
+  flex: 1;
+  min-width: 0;
+}
+.check-list li.done span {
+  text-decoration: line-through;
+  color: var(--text-2);
+}
+.ci-del {
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px;
+}
+.ci-area {
+  min-height: 80px;
+  padding: var(--sp-3);
+  resize: vertical;
+  font-family: inherit;
+}
+.ci-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-3);
+}
+.task-del {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  width: 100%;
+  margin-top: var(--sp-3);
+  padding: var(--sp-3);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: none;
+  color: var(--danger);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Botón de alta del módulo: sobre la barra inferior, no encima del FAB. */
+.work-fab {
+  position: fixed;
+  right: var(--sp-5);
+  bottom: calc(104px + env(safe-area-inset-bottom));
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--ink);
+  color: var(--ink-contrast);
+  box-shadow: var(--shadow-nav);
+  cursor: pointer;
+  z-index: 40;
+}
+
+/* Pomodoro */
+.pomo {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+}
+.pomo-ring {
+  flex: 0 0 auto;
+}
+.pomo-side {
+  flex: 1;
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.pomo-tabs {
+  margin: 0;
+}
+.pomo-task {
+  height: 38px;
+  padding: 0 var(--sp-2);
+}
+.pomo-actions {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: center;
+}
+.pomo-actions .btn-dark {
+  flex: 1;
+  justify-content: center;
+}
+.pomo-total {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  font-weight: 700;
+}
+
+@media (min-width: 768px) {
+  .kan-col {
+    flex: 1 1 0;
+    max-width: none;
+  }
+  .work-fab {
+    bottom: var(--sp-6);
+  }
+}

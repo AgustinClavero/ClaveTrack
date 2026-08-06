@@ -687,6 +687,192 @@ export type Database = {
         }
         Relationships: []
       }
+      objectives: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_order: number
+          emoji: string | null
+          id: string
+          status: string
+          target_date: string | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number
+          emoji?: string | null
+          id?: string
+          status?: string
+          target_date?: string | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number
+          emoji?: string | null
+          id?: string
+          status?: string
+          target_date?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      pomodoro_sessions: {
+        Row: {
+          created_at: string | null
+          id: string
+          kind: string
+          log_date: string
+          minutes: number
+          task_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          kind?: string
+          log_date?: string
+          minutes: number
+          task_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          kind?: string
+          log_date?: string
+          minutes?: number
+          task_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          display_order: number
+          emoji: string | null
+          id: string
+          name: string
+          objective_id: string | null
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          display_order?: number
+          emoji?: string | null
+          id?: string
+          name: string
+          objective_id?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          display_order?: number
+          emoji?: string | null
+          id?: string
+          name?: string
+          objective_id?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      task_items: {
+        Row: {
+          created_at: string | null
+          display_order: number
+          done: boolean
+          id: string
+          task_id: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number
+          done?: boolean
+          id?: string
+          task_id: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number
+          done?: boolean
+          id?: string
+          task_id?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_order: number
+          done_at: string | null
+          due_date: string | null
+          estimate_min: number | null
+          id: string
+          priority: string
+          project_id: string | null
+          status: string
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number
+          done_at?: string | null
+          due_date?: string | null
+          estimate_min?: number | null
+          id?: string
+          priority?: string
+          project_id?: string | null
+          status?: string
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number
+          done_at?: string | null
+          due_date?: string | null
+          estimate_min?: number | null
+          id?: string
+          priority?: string
+          project_id?: string | null
+          status?: string
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_settings: {
         Row: {
           created_at: string | null

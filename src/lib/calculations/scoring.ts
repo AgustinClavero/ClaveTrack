@@ -6,6 +6,7 @@
 // ============================================================
 
 import { nutritionScore, type NutritionResult } from "./nutrition-score";
+import { focusArea } from "./work";
 
 export type AreaKey = "nutrition" | "activity" | "focus" | "study" | "habits" | "rest";
 
@@ -85,6 +86,10 @@ export interface DayAreaInputs {
   habits: { done: boolean }[];
   /** Calidad de sueño 1..10 del check-in (null = sin dato). */
   sleepQuality: number | null;
+  /** Tareas con fecha para hoy o vencidas. Sin tareas, el área no puntúa. */
+  tasks?: { status: "pendiente" | "haciendo" | "hecha"; dueDate: string | null }[];
+  /** "Hoy" del usuario, para saber qué tarea es del día. */
+  today?: string;
 }
 
 /** El área de nutrición es el Nutrition Score completo, no kcal vs objetivo. */
@@ -109,8 +114,11 @@ export function computeAreasForDay(i: DayAreaInputs): Partial<Record<AreaKey, Ar
   const nutri = nutritionAreaFor(i);
   const doneCount = i.habits.filter((h) => h.done).length;
 
+  const focus = i.tasks && i.today ? focusArea(i.tasks, i.today) : { value: 0, hasData: false };
+
   return {
     nutrition: { value: nutri.total, hasData: i.mealCount > 0 },
+    focus,
     habits: {
       value: i.habits.length ? (doneCount / i.habits.length) * 100 : 0,
       hasData: i.habits.length > 0,
