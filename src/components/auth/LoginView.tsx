@@ -9,7 +9,7 @@ const PX = (id: number) =>
   `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=800&h=800`;
 
 const TILES = [
-  { cls: "t-food", img: PX(3297807), emoji: "🥗", lbl: "Comidas" },
+  { cls: "t-food", img: PX(6294248), emoji: "🍗", lbl: "Comidas" },
   { cls: "t-train", img: PX(4162475), emoji: "🏋️", lbl: "Entrenos" },
   { cls: "t-habit", img: PX(1458671), emoji: "💧", lbl: "Hábitos" },
   { cls: "t-work", img: PX(3184292), emoji: "💻", lbl: "Trabajo" },

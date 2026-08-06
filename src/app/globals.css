@@ -2843,7 +2843,11 @@ svg.line {
   cursor: pointer;
   white-space: nowrap;
 }
-.tab.on {
+/* `.on` y `.active` conviven en el proyecto: las dos marcan la pestaña
+   elegida, así que las dos tienen que verse igual. */
+.tab.on,
+.tab.active,
+.tab[aria-selected="true"] {
   background: var(--ink);
   color: var(--ink-contrast);
   border-color: var(--ink);
