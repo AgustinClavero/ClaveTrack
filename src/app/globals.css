@@ -6478,3 +6478,48 @@ label,
 .bell-item {
   touch-action: manipulation;
 }
+
+/* Entrada exacta: los ml que no son de 250, el total de pasos del teléfono. */
+.water-exact {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
+.water-exact input {
+  flex: 1;
+  min-width: 0;
+  height: 38px;
+  padding: 0 var(--sp-3);
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 700;
+}
+.water-exact input:focus-visible {
+  box-shadow: none;
+  border-color: var(--ink);
+  outline: none;
+}
+.wx-u {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--text-2);
+}
+.water-exact button {
+  flex: 0 0 auto;
+  height: 38px;
+  padding: 0 var(--sp-4);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--ink);
+  color: var(--ink-contrast);
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  cursor: pointer;
+}
+.water-exact button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

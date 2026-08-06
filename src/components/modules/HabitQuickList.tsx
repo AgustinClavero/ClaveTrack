@@ -18,9 +18,8 @@ function stepFor(h: Habit): number {
 }
 const decimalsFor = (h: Habit) => (["l", "h"].includes(h.unit.toLowerCase()) ? 1 : 0);
 
-const GLASS_L = 0.25;
-/** El agua se cuenta en vasos, igual que en su card: en litros el paso de
- *  0,25 se mostraba como "0,3" y saltaba a "0,5". */
+/** El agua se cuenta en mililitros, igual que en su card: en litros el paso
+ *  de 0,25 se mostraba como "0,3" y saltaba a "0,5". */
 const isWater = (h: Habit) => h.unit.toLowerCase() === "l";
 
 export interface HabitGroup {
@@ -90,9 +89,9 @@ export function HabitQuickList({ groups, active }: { groups: HabitGroup[]; activ
               const numeric = h.kind !== "boolean" && h.target != null;
               const d = decimalsFor(h);
               const water = isWater(h);
-              const shown = water ? Math.round(h.value / GLASS_L) : h.value;
-              const goal = water ? Math.round((h.target ?? 0) / GLASS_L) : (h.target ?? 0);
-              const unit = water ? "vasos" : h.unit;
+              const shown = water ? Math.round(h.value * 1000) : h.value;
+              const goal = water ? Math.round((h.target ?? 0) * 1000) : (h.target ?? 0);
+              const unit = water ? "ml" : h.unit;
               return (
                 <div className={`hs-row${h.done ? " done" : ""}`} key={h.id}>
                   <span className="hs-e" aria-hidden="true">

@@ -28,7 +28,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <RegisterSheet />
       <CheckinSheet checkin={shell.checkin} />
       <MealSheet proteinToday={shell.proteinToday} proteinGoal={shell.proteinGoal} />
-      <WeightSheet current={shell.lastWeightKg} />
+      <WeightSheet current={shell.lastWeightKg} today={shell.today} />
       <WorkoutSheet weightKg={shell.lastWeightKg ?? 0} heightCm={shell.heightCm} />
       <RoutineSheet habits={shell.habits} />
       <NutritionSheet habits={shell.habits} />

@@ -31,25 +31,31 @@ export function SwipeDeck({
   const selfUntil = useRef(0);
 
   /**
-   * El carrusel toma la altura de la página que se está viendo. Si no, todas
-   * se estiran a la más alta y las cortas quedan con medio metro de vacío.
+   * Altura fija: la de la página más alta. Ajustarla a la activa hacía que
+   * el bloque creciera y se achicara en cada deslizada, y todo lo de abajo
+   * saltara con él. Las páginas cortas quedan alineadas arriba, sin estirarse.
    * En escritorio no aplica: ahí es un grid y se igualan a propósito.
    */
   useEffect(() => {
-    const page = ref.current?.children[active] as HTMLElement | undefined;
-    if (!page) return;
+    const box = ref.current;
+    if (!box) return;
     const wide = window.matchMedia("(min-width: 768px)");
-    const measure = () => setPageH(wide.matches ? undefined : page.getBoundingClientRect().height);
+    const pages = Array.from(box.children) as HTMLElement[];
+
+    const measure = () => {
+      if (wide.matches) return setPageH(undefined);
+      setPageH(Math.max(...pages.map((p) => p.getBoundingClientRect().height)));
+    };
 
     measure();
     const ro = new ResizeObserver(measure);
-    ro.observe(page);
+    pages.forEach((p) => ro.observe(p));
     wide.addEventListener("change", measure);
     return () => {
       ro.disconnect();
       wide.removeEventListener("change", measure);
     };
-  }, [active]);
+  }, [children.length]);
 
   function onScroll() {
     const box = ref.current;

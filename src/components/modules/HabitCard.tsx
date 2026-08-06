@@ -12,7 +12,7 @@ import { habitAccent } from "@/lib/habit-accent";
 /** Paso de incremento según la unidad. */
 function stepFor(h: Habit): number {
   const u = h.unit.toLowerCase();
-  if (u === "l") return 0.25; // un vaso
+  if (u === "l") return SIP_L; // 250 ml
   if (u.includes("paso")) return 500;
   if (u === "h") return 0.5;
   if (u === "min") return 5;
@@ -20,7 +20,9 @@ function stepFor(h: Habit): number {
 }
 const decimalsFor = (h: Habit) => (["l", "h"].includes(h.unit.toLowerCase()) ? 1 : 0);
 
-const GLASS_L = 0.25;
+/** Lo que suma cada toque del agua: 250 ml. El dato se guarda en litros. */
+const SIP_L = 0.25;
+const ML = (l: number) => Math.round(l * 1000);
 
 /**
  * Card de hábito del día: anillo de progreso contra el objetivo y el control
@@ -43,6 +45,7 @@ export function HabitCard({ habit, readOnly = false }: { habit: Habit; readOnly?
 
   const numeric = h.kind !== "boolean" && h.target != null;
   const isWater = h.unit.toLowerCase() === "l";
+  const isSteps = h.unit.toLowerCase().includes("paso");
   const d = decimalsFor(h);
   const pct = h.target ? Math.min(1, h.value / h.target) : h.done ? 1 : 0;
   const accent = habitAccent(h);
@@ -73,9 +76,24 @@ export function HabitCard({ habit, readOnly = false }: { habit: Habit; readOnly?
     });
   }
 
-  // El agua se cuenta en vasos: es la unidad con la que uno realmente toma.
-  const glasses = isWater ? Math.round(h.value / GLASS_L) : 0;
-  const glassGoal = isWater && h.target ? Math.round(h.target / GLASS_L) : 0;
+  // El agua se cuenta en mililitros: es como viene rotulado lo que uno toma.
+  const [extra, setExtra] = useState("");
+
+  /** Suma una cantidad escrita a mano, para los vasos que no son de 250. */
+  function addExact() {
+    const ml = Number(extra.replace(",", "."));
+    if (!Number.isFinite(ml) || ml <= 0) return;
+    setExtra("");
+    bump(ml / 1000);
+  }
+
+  /** Fija el total del día. Los pasos no se suman: el teléfono ya da el total. */
+  function setExact() {
+    const n = Number(extra.replace(/[.\s]/g, "").replace(",", "."));
+    if (!Number.isFinite(n) || n < 0) return;
+    setExtra("");
+    bump(n - h.value);
+  }
 
   return (
     <article className={`card habit-cardx${h.done ? " done" : ""}`} data-cat={h.category}>
@@ -90,7 +108,7 @@ export function HabitCard({ habit, readOnly = false }: { habit: Habit; readOnly?
           <p>
             {isWater ? (
               <>
-                {glasses} <span className="of">/ {glassGoal} vasos · {nf(h.target ?? 0, 1)} L</span>
+                {nf(ML(h.value))} <span className="of">/ {nf(ML(h.target ?? 0))} ml</span>
               </>
             ) : numeric ? (
               <>
@@ -116,27 +134,65 @@ export function HabitCard({ habit, readOnly = false }: { habit: Habit; readOnly?
       {!readOnly && (
         <footer className="hc-foot">
           {isWater ? (
-            <div className="stepper-mini wide">
-              <button onClick={() => bump(-GLASS_L)} aria-label="Quitar un vaso" disabled={h.value <= 0}>
-                <Minus size={16} />
-              </button>
-              <span>vaso de 250 ml</span>
-              <button onClick={() => bump(GLASS_L)} aria-label="Sumar un vaso">
-                <Plus size={16} />
-              </button>
-            </div>
+            <>
+              <div className="stepper-mini wide">
+                <button onClick={() => bump(-SIP_L)} aria-label="Quitar 250 ml" disabled={h.value <= 0}>
+                  <Minus size={16} />
+                </button>
+                <span>250 ml</span>
+                <button onClick={() => bump(SIP_L)} aria-label="Sumar 250 ml">
+                  <Plus size={16} />
+                </button>
+              </div>
+              {/* Para lo que no viene de a 250: una botella de 600, un vaso de 300. */}
+              <div className="water-exact">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="Otra cantidad"
+                  value={extra}
+                  onChange={(e) => setExtra(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && addExact()}
+                  aria-label="Otra cantidad en mililitros"
+                />
+                <span className="wx-u">ml</span>
+                <button onClick={addExact} disabled={!extra}>
+                  Sumar
+                </button>
+              </div>
+            </>
           ) : numeric ? (
-            <div className="stepper-mini wide">
-              <button onClick={() => bump(-stepFor(h))} aria-label={`Restar a ${h.name}`}>
+            <>
+              <div className="stepper-mini wide">
+                <button onClick={() => bump(-stepFor(h))} aria-label={`Restar a ${h.name}`}>
                 <Minus size={16} />
               </button>
-              <span>
-                {nf(h.value, d)} {h.unit}
-              </span>
-              <button onClick={() => bump(stepFor(h))} aria-label={`Sumar a ${h.name}`}>
-                <Plus size={16} />
-              </button>
-            </div>
+                <span>
+                  {nf(h.value, d)} {h.unit}
+                </span>
+                <button onClick={() => bump(stepFor(h))} aria-label={`Sumar a ${h.name}`}>
+                  <Plus size={16} />
+                </button>
+              </div>
+              {/* El teléfono cuenta el día completo: se pega ese total acá. */}
+              {isSteps && (
+                <div className="water-exact">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="Total del día"
+                    value={extra}
+                    onChange={(e) => setExtra(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && setExact()}
+                    aria-label="Total de pasos del día"
+                  />
+                  <span className="wx-u">pasos</span>
+                  <button onClick={setExact} disabled={!extra}>
+                    Fijar
+                  </button>
+                </div>
+              )}
+            </>
           ) : (
             <button className={`hc-toggle${h.done ? " on" : ""}`} onClick={toggle} aria-pressed={h.done}>
               {h.done ? "Hecho ✓" : "Marcar como hecho"}

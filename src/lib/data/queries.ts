@@ -631,9 +631,10 @@ export async function getActivityDay(day?: string): Promise<ActivityDay | null> 
   habits.forEach((h) => {
     const unit = h.unit.toLowerCase();
     if (unit.includes("paso")) {
+      // El máximo entre lo cargado a mano y lo que suman las sesiones: el
+      // teléfono cuenta el día entero, incluidos los pasos por la casa.
       h.value = Math.max(h.value, stepsToday);
       h.done = h.target ? h.value >= h.target : h.value > 0;
-      autoHabitIds.push(h.id);
     } else if (unit === "x/sem") {
       h.value = all.length;
       h.done = h.target ? h.value >= h.target : h.value > 0;
@@ -887,6 +888,8 @@ export interface ShellData {
   alerts: Insight[];
   proteinToday: number;
   proteinGoal: number;
+  /** "Hoy" del servidor: tope del selector de día del peso. */
+  today: string;
 }
 
 export async function getShellData(): Promise<ShellData | null> {
@@ -1004,6 +1007,7 @@ export async function getShellData(): Promise<ShellData | null> {
     alerts,
     proteinToday: Math.round(protein),
     proteinGoal: goalRow?.protein_g ?? 0,
+    today: ctx.today,
   };
 }
 
