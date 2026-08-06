@@ -9,6 +9,7 @@ import { Ring } from "@/components/ui/Ring";
 import { SwipeDeck } from "@/components/modules/SwipeDeck";
 import { CalendarStrip } from "@/components/modules/CalendarStrip";
 import { YesterdaySummaryCard } from "@/components/modules/YesterdaySummaryCard";
+import { PendingList } from "@/components/modules/PendingList";
 import { AreaStrip } from "@/components/modules/AreaStrip";
 import { MacroCard } from "@/components/modules/MacroCard";
 import { FocusEditor } from "@/components/modules/FocusEditor";
@@ -207,21 +208,7 @@ export default async function TodayPage() {
             <span className="eyebrow">Pendientes de hoy</span>
             <span className="dc-pct">{pendingHabits}</span>
           </div>
-          {pendingHabits === 0 ? (
-            <div className="empty-mini">Todo marcado por hoy. 🎯</div>
-          ) : (
-            <ul className="todo-list">
-              {habits
-                .filter((h) => !h.done)
-                .slice(0, 5)
-                .map((h) => (
-                  <li key={h.id}>
-                    <span aria-hidden="true">{h.emoji}</span>
-                    {h.name}
-                  </li>
-                ))}
-            </ul>
-          )}
+          <PendingList habits={habits} />
         </div>
         {/* Cierre del día anterior, al final: primero se resuelve hoy. */}
         <YesterdaySummaryCard date={yesterday} label={yesterdayLabel} />

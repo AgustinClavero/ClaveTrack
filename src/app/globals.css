@@ -713,15 +713,32 @@ body {
   border-radius: var(--r-pill);
   color: var(--text);
 }
+/* El gráfico se arrastra en horizontal cuando hay más pesadas que ancho. */
+.chart-scroll {
+  overflow-x: auto;
+  overflow-y: visible;
+  scrollbar-width: none;
+  /* Sin padding lateral: sumaba ancho de scroll y el gráfico se arrastraba
+     unos píxeles aunque entrara entero. */
+  margin-top: var(--sp-6);
+  overscroll-behavior-x: contain;
+}
+.chart-scroll::-webkit-scrollbar {
+  display: none;
+}
 .chart-wrap {
   position: relative;
-  width: 100%;
   /* El globo del último registro asoma por encima del gráfico: sin este
      aire queda pegado a la píldora del objetivo. */
-  margin-top: var(--sp-6);
+}
+.chart-hint {
+  margin: var(--sp-2) 0 0;
+  font-size: var(--fs-2xs);
+  color: var(--muted);
+  font-weight: 600;
+  text-align: center;
 }
 svg.line {
-  width: 100%;
   height: auto;
   display: block;
   overflow: visible;
@@ -744,6 +761,10 @@ svg.line {
 }
 .tip[data-anchor="start"] {
   transform: translate(0, -115%);
+}
+.tip[data-anchor="center"] {
+  padding: 5px 9px;
+  font-size: 11px;
 }
 .tip small {
   display: block;
@@ -6522,4 +6543,52 @@ label,
 .water-exact button:disabled {
   opacity: 0.4;
   cursor: default;
+}
+
+/* Pendientes accionables: se marcan desde Inicio. */
+.todo-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: var(--sp-2) 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.tr-n {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.tr-n small {
+  font-size: var(--fs-2xs);
+  color: var(--text-2);
+  font-weight: 600;
+}
+.tr-check {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--r-pill);
+  color: transparent;
+  transition: all var(--dur-fast) var(--ease);
+}
+.todo-row:hover .tr-check {
+  border-color: var(--green);
+  color: var(--green);
+}
+.tr-go {
+  flex: 0 0 auto;
+  color: var(--muted);
 }
