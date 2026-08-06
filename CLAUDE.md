@@ -66,8 +66,10 @@ Storage: bucket privado `meals` con ruta `{user_id}/{uuid}.jpg` y RLS por carpet
 
 ## Diseño (firme)
 Estilo Cal AI + Fitia pero **BLANCO Y NEGRO, sin verde**. Números grandes negros;
-botones/FAB/anillos-de-área/gráfico/racha/nivel/score en negro/gris. **Solo los anillos
-de macros llevan color**: proteína=rojo, carbos=ámbar, grasa=azul, calorías/🔥=negro.
+botones/FAB/anillos-de-área/gráfico/racha/nivel/score en negro/gris. **Los anillos de macros llevan
+color** (proteína=rojo, carbos=ámbar, grasa=azul) y **el cumplimiento usa una escala
+propia** (`src/lib/score-color.ts`): rojo → naranja → ámbar → lima → verde, con el
+verde reservado a ≥90. Fuera de eso, negro y gris.
 Nav flotante tipo píldora + FAB oscuro (móvil), sidebar (desktop). Dark mode: fondo
 `#0a0a0b`. Gamificación **sobria** (anillos + barra de nivel, sin mascotas ni confeti).
 **Paddings/márgenes GENEROSOS. Desktop FULL WIDTH**: grid de widgets de 12 columnas,
@@ -77,25 +79,44 @@ Referencia visual de nutrición: foto de la comida **como banner a sangre** en e
 detalle, macros en cards separadas, filas de comida con miniatura.
 
 ## Estado actual
-- **Auth + onboarding**: wizard de 6 pasos (datos personales → peso → plan →
-  hábitos → objetivos → resumen) con calculadora Mifflin-St Jeor (presets de
-  déficit/mantenimiento/volumen) y guardado por Server Action idempotente.
+- **Auth + onboarding**: wizard de 6 pasos con calculadora Mifflin-St Jeor y
+  guardado por Server Action idempotente.
 - **Motor de cumplimiento** con renormalización de pesos, `daily_scores`
   materializada, racha por umbral configurable y XP/nivel acumulado real.
-- **Nutrición completa**: catálogo de alimentos (38 base + alta propia), registro de
-  comidas con foto, detalle con banner y porciones reescalables, agua.
-- **Hábitos**: CRUD completo, valores numéricos con stepper, hábitos clave.
-- **Ajustes** (`/settings`): objetivos, perfil, hábitos, pesos del score y umbral.
-- **Progreso**: peso con tendencia y rango funcional, racha con anillos por día.
+- **Nutrición**: catálogo de ~148 alimentos (incluye 44 platos preparados con
+  `healthy_score`), registro con foto, detalle con banner, recetas, mezclas y
+  aderezos, agua en ml, suplementos.
+- **Nutrition Score** (`src/lib/calculations/nutrition-score.ts`): puntúa decisiones
+  por **zonas**, no exactitud. Calorías 25, proteína 25, calidad 25, verduras 10,
+  agua 10, fruta 5. Asimétrico: quedarse corto pesa menos que pasarse.
+- **Resumen del día**: modal a pantalla completa con lectura en palabras. Solo para
+  días cerrados (la regla vive en el servidor). Se llega desde la campanita, el
+  detalle del día y una card al final de Inicio.
+- **Check-in con índice de bienestar** (`wellbeing.ts`): ánimo, energía, sueño,
+  horas dormidas, hambre y estrés → Estado del día + sugerencia de carga.
+- **Actividad**: sesiones con METs, hábitos de movimiento, pasos editables a mano.
+- **Rutina**: planificar el día, leer, dormir (sincronizado con el check-in).
+- **Navegación por fecha** en Nutrición/Actividad/Rutina (`?d=`), validada en servidor.
+- **Progreso**: peso con medias móviles 7/30 y ritmo semanal, gráfico deslizable,
+  calendario mensual con detalle por día, hitos y logros.
+- **Ajustes** (`/settings`): objetivos, perfil, hábitos, suplementos, pesos y umbral.
 
 ## Próximos pasos (roadmap)
-1. Módulo **Trabajo** unificado (Objetivos + Proyectos + Tareas con vistas
-   lista/kanban/objetivo) + Pomodoro + Estudio → habilita las áreas Foco/Estudio.
-2. **Actividad/entrenamiento** → habilita el área Actividad.
-3. Navegación por fecha (el calendario ya es clickeable a nivel visual pero solo se
-   ve el día de hoy).
-4. Estadísticas, revisión semanal, recordatorios.
-5. Despensa/compras/finanzas. Luego: IA e infra SaaS (planes/Stripe/plantillas/i18n).
+1. Módulo **Planificación/Trabajo**: Proyectos → Tareas (checklist + descripción),
+   vistas lista/kanban, y más adelante Objetivos y Pomodoro → habilita Foco/Estudio.
+2. **Correlaciones y revisión semanal**: cruzar sueño/ánimo/energía contra
+   adherencia. Necesita ~30 días de histórico para no reportar ruido.
+3. Foco del día con pregunta de cierre (`daily_logs.focus_done` ya existe, sin UI).
+4. Notificación push real a las 00:00 (service worker + disparador de servidor).
+5. Despensa/compras/finanzas. Luego: IA e infra SaaS.
+
+## Deuda conocida
+- **Sin tests.** El dominio en `src/lib/calculations/` es puro y es lo que más caro
+  sale equivocar: es el primer lugar donde conviene empezar.
+- ESLint sin configurar (`next lint` pide instalarlo).
+- `daysBetween` duplicado en `insights.ts` y `weight-trend.ts`.
+- Enlace roto a `/habits` en Inicio ("Ver todos" de Hábitos clave).
+- El hábito "x/sem" cuenta cualquier sesión de la semana, no solo la de su deporte.
 
 ## Reglas de producto del scoring
 El cumplimiento NO puntúa áreas sin datos (se renormaliza). Racha = día con
