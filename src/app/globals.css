@@ -1072,12 +1072,61 @@ svg.line {
   background: var(--surface);
 }
 .login-hero {
+  position: relative;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0;
   padding: 0;
   height: 50vh;
   min-height: 340px;
+}
+
+/* Velo oscuro: las fotos son de colores dispares y el texto tiene que
+   leerse sobre cualquiera de ellas. */
+.hero-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(180deg, rgba(10, 10, 12, 0.5) 0%, rgba(10, 10, 12, 0.62) 55%, rgba(10, 10, 12, 0.78) 100%);
+}
+.hero-brand {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  padding: var(--sp-5);
+  text-align: center;
+  color: #fff;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.55);
+}
+.hero-brand .logo {
+  width: 58px;
+  height: 58px;
+  border-radius: 17px;
+  background: #fff;
+  color: #14141a;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  font-size: 27px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  text-shadow: none;
+}
+.hero-brand h1 {
+  margin: var(--sp-2) 0 0;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: var(--tracking-tight);
+}
+.hero-brand p {
+  margin: 0;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  opacity: 0.9;
 }
 .hero-tile {
   position: relative;
@@ -6913,4 +6962,50 @@ label,
     flex: 1 1 0;
     max-width: none;
   }
+}
+
+/* ---------- Login: pestañas, mensajes y enlaces ---------- */
+.auth-tabs {
+  margin-bottom: var(--sp-4);
+}
+.auth-tabs .tab {
+  flex: 1;
+  justify-content: center;
+  text-align: center;
+}
+.auth-msg {
+  margin: 0 0 var(--sp-3);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text);
+}
+.auth-msg.error {
+  color: var(--red);
+}
+.auth-submit {
+  width: 100%;
+  justify-content: center;
+  margin-top: var(--sp-1);
+}
+.auth-link {
+  display: block;
+  width: 100%;
+  margin-top: var(--sp-4);
+  border: 0;
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.auth-link:disabled {
+  opacity: 0.5;
+}
+/* La pantalla de reseteo no tiene mosaico: el bloque ocupa todo. */
+.reset-only {
+  min-height: 100vh;
+  justify-content: center;
 }
