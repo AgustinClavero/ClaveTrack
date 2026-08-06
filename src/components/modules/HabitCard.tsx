@@ -186,7 +186,6 @@ export function HabitCard({ habit, readOnly = false }: { habit: Habit; readOnly?
                     onKeyDown={(e) => e.key === "Enter" && setExact()}
                     aria-label="Total de pasos del día"
                   />
-                  <span className="wx-u">pasos</span>
                   <button onClick={setExact} disabled={!extra}>
                     Fijar
                   </button>
