@@ -7,6 +7,7 @@ import { ProfilePanel } from "./ProfilePanel";
 import { HabitsPanel } from "./HabitsPanel";
 import { ScorePanel } from "./ScorePanel";
 import { SupplementsPanel } from "./SupplementsPanel";
+import { ConnectionsPanel } from "./ConnectionsPanel";
 
 const TABS = [
   { k: "goals", l: "Objetivos" },
@@ -14,6 +15,7 @@ const TABS = [
   { k: "habits", l: "Hábitos" },
   { k: "supplements", l: "Suplementos" },
   { k: "score", l: "Cumplimiento" },
+  { k: "connections", l: "Conexiones" },
 ] as const;
 
 export function SettingsView({ data }: { data: SettingsData }) {
@@ -41,6 +43,7 @@ export function SettingsView({ data }: { data: SettingsData }) {
         {tab === "habits" && <HabitsPanel habits={data.habits.filter((h) => h.groupKey !== "supplements")} />}
         {tab === "supplements" && <SupplementsPanel items={data.habits.filter((h) => h.groupKey === "supplements")} />}
         {tab === "score" && <ScorePanel settings={data.settings} />}
+        {tab === "connections" && <ConnectionsPanel strava={data.strava} />}
       </div>
     </div>
   );

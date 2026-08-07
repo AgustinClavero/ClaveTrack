@@ -795,6 +795,42 @@ export type Database = {
         }
         Relationships: []
       }
+      strava_connections: {
+        Row: {
+          access_token: string
+          athlete_id: number
+          athlete_name: string | null
+          connected_at: string | null
+          expires_at: string
+          refresh_token: string
+          scope: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          athlete_id: number
+          athlete_name?: string | null
+          connected_at?: string | null
+          expires_at: string
+          refresh_token: string
+          scope?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          athlete_id?: number
+          athlete_name?: string | null
+          connected_at?: string | null
+          expires_at?: string
+          refresh_token?: string
+          scope?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       task_items: {
         Row: {
           created_at: string | null
@@ -927,6 +963,8 @@ export type Database = {
           minutes: number
           note: string | null
           steps: number | null
+          source: string
+          external_id: string | null
           updated_at: string | null
           user_id: string
         }
@@ -941,6 +979,8 @@ export type Database = {
           minutes: number
           note?: string | null
           steps?: number | null
+          source?: string
+          external_id?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -955,6 +995,8 @@ export type Database = {
           minutes?: number
           note?: string | null
           steps?: number | null
+          source?: string
+          external_id?: string | null
           updated_at?: string | null
           user_id?: string
         }

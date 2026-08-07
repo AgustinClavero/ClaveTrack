@@ -8,3 +8,4 @@ export * from "./actions/profile";
 export * from "./actions/activity";
 export * from "./actions/progress";
 export * from "./actions/work";
+export * from "./actions/strava";

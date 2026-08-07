@@ -7048,3 +7048,30 @@ label,
   min-height: 100vh;
   justify-content: center;
 }
+
+/* Panel de conexiones (Strava). */
+.conn-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-4);
+  margin: var(--sp-3) 0;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--text-2);
+}
+.conn-actions {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+.conn-actions .btn-dark,
+.conn-connect {
+  justify-content: center;
+}
+.conn-connect {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+  text-decoration: none;
+}

@@ -22,6 +22,7 @@ import { projectProgress, objectiveProgress, type TaskStatus, type TaskPriority 
 import { daySummary, type DaySummary } from "@/lib/calculations/day-summary";
 import type { NutritionResult } from "@/lib/calculations/nutrition-score";
 import { dayFoodFacts } from "./nutrition-day";
+import { stravaConfigured } from "@/lib/strava";
 import { addDays, dayWindow, monthGrid, recentDays, type DayCell } from "@/lib/date";
 import type { Habit, HabitCategory, Meal, MealType, NutritionGoals, WeightPoint } from "@/types";
 
@@ -1025,6 +1026,14 @@ export interface SettingsData {
   goals: (NutritionGoals & { mode: string }) | null;
   habits: Habit[];
   lastWeightKg: number | null;
+  strava: {
+    connected: boolean;
+    athleteName: string | null;
+    connectedAt: string | null;
+    activities: number;
+    /** Si el servidor tiene las credenciales: sin ellas no hay nada que ofrecer. */
+    configured: boolean;
+  };
 }
 
 export async function getSettingsData(): Promise<SettingsData | null> {
@@ -1032,7 +1041,7 @@ export async function getSettingsData(): Promise<SettingsData | null> {
   if (!ctx) return null;
   const supabase = getServerClient();
 
-  const [goalsRes, habitsRes, lastWeightRes] = await Promise.all([
+  const [goalsRes, habitsRes, lastWeightRes, stravaRes, stravaCount] = await Promise.all([
     supabase
       .from("nutrition_goals")
       .select("kcal, protein_g, carbs_g, fat_g, water_ml, mode")
@@ -1053,6 +1062,12 @@ export async function getSettingsData(): Promise<SettingsData | null> {
       .not("weight_kg", "is", null)
       .order("log_date", { ascending: false })
       .limit(1),
+    supabase.from("strava_connections").select("athlete_name, connected_at").eq("user_id", ctx.userId).maybeSingle(),
+    supabase
+      .from("workouts")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", ctx.userId)
+      .eq("source", "strava"),
   ]);
 
   const goalRow = goalsRes.data?.[0];
@@ -1062,6 +1077,13 @@ export async function getSettingsData(): Promise<SettingsData | null> {
     goals: goalRow ? { ...mapGoals(goalRow), mode: goalRow.mode ?? "manual" } : null,
     habits: mapHabits((habitsRes.data ?? []) as HabitRow[], []),
     lastWeightKg: lastWeightRes.data?.[0]?.weight_kg != null ? Number(lastWeightRes.data[0].weight_kg) : null,
+    strava: {
+      connected: !!stravaRes.data,
+      athleteName: stravaRes.data?.athlete_name ?? null,
+      connectedAt: stravaRes.data?.connected_at ?? null,
+      activities: stravaCount.count ?? 0,
+      configured: stravaConfigured(),
+    },
   };
 }
 
