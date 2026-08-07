@@ -158,7 +158,7 @@ export function OnboardingWizard() {
   const [target, setTarget] = useState(80);
 
   // Paso 2 — plan nutricional
-  const [mode, setMode] = useState<"auto" | "manual" | "imported">("auto");
+  const [mode, setMode] = useState<"auto" | "manual">("auto");
   const [preset, setPreset] = useState<GoalPreset>("moderate_cut");
   const [kcal, setKcal] = useState(1950);
   const [protein, setProtein] = useState(140);
@@ -404,7 +404,6 @@ export function OnboardingWizard() {
                 [
                   ["auto", "Calcular por mí"],
                   ["manual", "Lo cargo yo"],
-                  ["imported", "Plan de nutricionista"],
                 ] as const
               ).map(([k, l]) => (
                 <button key={k} className={`chip${mode === k ? " on" : ""}`} onClick={() => setMode(k)}>

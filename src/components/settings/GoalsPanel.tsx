@@ -22,8 +22,8 @@ export function GoalsPanel({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
-  const [mode, setMode] = useState<"auto" | "manual" | "imported">(
-    (goals?.mode as "auto" | "manual" | "imported") ?? "manual"
+  const [mode, setMode] = useState<"auto" | "manual">(
+    (goals?.mode as "auto" | "manual") ?? "manual"
   );
   const [preset, setPreset] = useState<GoalPreset>("moderate_cut");
 
@@ -151,7 +151,6 @@ export function GoalsPanel({
             [
               ["auto", "Calculado"],
               ["manual", "Manual"],
-              ["imported", "Plan de nutricionista"],
             ] as const
           ).map(([k, l]) => (
             <button key={k} className={`chip${mode === k ? " on" : ""}`} onClick={() => setMode(k)}>

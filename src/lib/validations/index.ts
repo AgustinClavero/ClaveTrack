@@ -180,6 +180,8 @@ export const nutritionGoalsSchema = z.object({
   carbsG: z.number().int().min(0).max(1000),
   fatG: z.number().int().min(0).max(400),
   waterMl: z.number().int().min(500).max(8000),
+  // "imported" ya no se ofrece —cargar el plan del nutricionista es lo mismo
+  // que "manual"—, pero se sigue aceptando para no romper lo ya guardado.
   mode: z.enum(["auto", "manual", "imported"]),
   calcInputs: z
     .object({
